@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
-
 	"github.com/ogen-go/ogen/validate"
 
 	std "encoding/json"
@@ -28,6 +27,35 @@ func TestAvailability_EncodeDecode(t *testing.T) {
 	var typ2 Availability
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
+
+func TestAvailability_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "\"available\""},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ Availability
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 Availability
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
 func TestBadRequestResponse_EncodeDecode(t *testing.T) {
 	var typ BadRequestResponse
 	typ.SetFake()
@@ -40,8 +68,8 @@ func TestBadRequestResponse_EncodeDecode(t *testing.T) {
 	var typ2 BadRequestResponse
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
-func TestConflictResponse_EncodeDecode(t *testing.T) {
-	var typ ConflictResponse
+func TestConflictErrorResponse_EncodeDecode(t *testing.T) {
+	var typ ConflictErrorResponse
 	typ.SetFake()
 
 	e := jx.Encoder{}
@@ -49,7 +77,558 @@ func TestConflictResponse_EncodeDecode(t *testing.T) {
 	data := e.Bytes()
 	require.True(t, std.Valid(data), "Encoded: %s", data)
 
-	var typ2 ConflictResponse
+	var typ2 ConflictErrorResponse
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlAppliance_EncodeDecode(t *testing.T) {
+	var typ GetNosqlAppliance
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlAppliance
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlApplianceDisk_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceDisk
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceDisk
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlApplianceDiskEncryptionKey_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceDiskEncryptionKey
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceDiskEncryptionKey
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlApplianceInterfacesItem_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceInterfacesItem
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceInterfacesItem
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlApplianceInterfacesItemSwitch_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceInterfacesItemSwitch
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceInterfacesItemSwitch
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlApplianceInterfacesItemSwitchSubnet_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceInterfacesItemSwitchSubnet
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceInterfacesItemSwitchSubnet
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlApplianceInterfacesItemSwitchSubnetInternet_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceInterfacesItemSwitchSubnetInternet
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceInterfacesItemSwitchSubnetInternet
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlApplianceInterfacesItemSwitchUserSubnet_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceInterfacesItemSwitchUserSubnet
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceInterfacesItemSwitchUserSubnet
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlApplianceRemark_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceRemark
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceRemark
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlApplianceRemarkNosql_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceRemarkNosql
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceRemarkNosql
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlApplianceRemarkNosqlDatabaseEngine_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceRemarkNosqlDatabaseEngine
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceRemarkNosqlDatabaseEngine
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestGetNosqlApplianceRemarkNosqlDatabaseEngine_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "\"Cassandra\""},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ GetNosqlApplianceRemarkNosqlDatabaseEngine
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 GetNosqlApplianceRemarkNosqlDatabaseEngine
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
+func TestGetNosqlApplianceRemarkNosqlDiskSize_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceRemarkNosqlDiskSize
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceRemarkNosqlDiskSize
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestGetNosqlApplianceRemarkNosqlDiskSize_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "102400"},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ GetNosqlApplianceRemarkNosqlDiskSize
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 GetNosqlApplianceRemarkNosqlDiskSize
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
+func TestGetNosqlApplianceRemarkNosqlMemory_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceRemarkNosqlMemory
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceRemarkNosqlMemory
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestGetNosqlApplianceRemarkNosqlMemory_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "8192"},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ GetNosqlApplianceRemarkNosqlMemory
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 GetNosqlApplianceRemarkNosqlMemory
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
+func TestGetNosqlApplianceRemarkNosqlPrimaryNodes_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceRemarkNosqlPrimaryNodes
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceRemarkNosqlPrimaryNodes
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceRemarkNosqlPrimaryNodesAppliance
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceRemarkNosqlPrimaryNodesAppliance
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlApplianceRemarkNosqlStorage_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceRemarkNosqlStorage
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceRemarkNosqlStorage
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestGetNosqlApplianceRemarkNosqlStorage_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "\"SSD\""},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ GetNosqlApplianceRemarkNosqlStorage
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 GetNosqlApplianceRemarkNosqlStorage
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
+func TestGetNosqlApplianceRemarkNosqlVirtualcore_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceRemarkNosqlVirtualcore
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceRemarkNosqlVirtualcore
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestGetNosqlApplianceRemarkNosqlVirtualcore_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "3"},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ GetNosqlApplianceRemarkNosqlVirtualcore
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 GetNosqlApplianceRemarkNosqlVirtualcore
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
+func TestGetNosqlApplianceRemarkServersItem_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceRemarkServersItem
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceRemarkServersItem
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlApplianceRemarkZone_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceRemarkZone
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceRemarkZone
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlSettings_EncodeDecode(t *testing.T) {
+	var typ GetNosqlSettings
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlSettings
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlSettingsBackup_EncodeDecode(t *testing.T) {
+	var typ GetNosqlSettingsBackup
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlSettingsBackup
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlSettingsBackupDayOfWeekItem_EncodeDecode(t *testing.T) {
+	var typ GetNosqlSettingsBackupDayOfWeekItem
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlSettingsBackupDayOfWeekItem
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlSettingsRepair_EncodeDecode(t *testing.T) {
+	var typ GetNosqlSettingsRepair
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlSettingsRepair
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlSettingsRepairFull_EncodeDecode(t *testing.T) {
+	var typ GetNosqlSettingsRepairFull
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlSettingsRepairFull
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlSettingsRepairFullDayOfWeek_EncodeDecode(t *testing.T) {
+	var typ GetNosqlSettingsRepairFullDayOfWeek
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlSettingsRepairFullDayOfWeek
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestGetNosqlSettingsRepairFullDayOfWeek_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "\"sun\""},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ GetNosqlSettingsRepairFullDayOfWeek
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 GetNosqlSettingsRepairFullDayOfWeek
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
+func TestGetNosqlSettingsRepairFullInterval_EncodeDecode(t *testing.T) {
+	var typ GetNosqlSettingsRepairFullInterval
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlSettingsRepairFullInterval
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestGetNosqlSettingsRepairFullInterval_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "7"},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ GetNosqlSettingsRepairFullInterval
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 GetNosqlSettingsRepairFullInterval
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
+func TestGetNosqlSettingsRepairIncremental_EncodeDecode(t *testing.T) {
+	var typ GetNosqlSettingsRepairIncremental
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlSettingsRepairIncremental
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetNosqlSettingsRepairIncrementalDaysOfWeekItem_EncodeDecode(t *testing.T) {
+	var typ GetNosqlSettingsRepairIncrementalDaysOfWeekItem
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlSettingsRepairIncrementalDaysOfWeekItem
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
 func TestGetParameterResponse_EncodeDecode(t *testing.T) {
@@ -74,6 +653,30 @@ func TestGetParameterResponseNosql_EncodeDecode(t *testing.T) {
 	require.True(t, std.Valid(data), "Encoded: %s", data)
 
 	var typ2 GetParameterResponseNosql
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetPlan_EncodeDecode(t *testing.T) {
+	var typ GetPlan
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetPlan
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestGetServiceClass_EncodeDecode(t *testing.T) {
+	var typ GetServiceClass
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetServiceClass
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
 func TestInstance_EncodeDecode(t *testing.T) {
@@ -124,6 +727,71 @@ func TestIsOk_EncodeDecode(t *testing.T) {
 	var typ2 IsOk
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
+func TestNodeHealth_EncodeDecode(t *testing.T) {
+	var typ NodeHealth
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NodeHealth
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNodeHealthNosql_EncodeDecode(t *testing.T) {
+	var typ NodeHealthNosql
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NodeHealthNosql
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNodeHealthNosqlStatus_EncodeDecode(t *testing.T) {
+	var typ NodeHealthNosqlStatus
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NodeHealthNosqlStatus
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestNodeHealthNosqlStatus_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "\"healthy-partial\""},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ NodeHealthNosqlStatus
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 NodeHealthNosqlStatus
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
 func TestNosqlAppliance_EncodeDecode(t *testing.T) {
 	var typ NosqlAppliance
 	typ.SetFake()
@@ -146,6 +814,18 @@ func TestNosqlApplianceDisk_EncodeDecode(t *testing.T) {
 	require.True(t, std.Valid(data), "Encoded: %s", data)
 
 	var typ2 NosqlApplianceDisk
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlApplianceDiskEncryptionKey_EncodeDecode(t *testing.T) {
+	var typ NosqlApplianceDiskEncryptionKey
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlApplianceDiskEncryptionKey
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
 func TestNosqlApplianceInterfacesItem_EncodeDecode(t *testing.T) {
@@ -355,6 +1035,42 @@ func TestNosqlApplianceRemarkNosqlMemory_Examples(t *testing.T) {
 		})
 	}
 }
+func TestNosqlApplianceRemarkNosqlPrimaryNodes_EncodeDecode(t *testing.T) {
+	var typ NosqlApplianceRemarkNosqlPrimaryNodes
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlApplianceRemarkNosqlPrimaryNodes
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlApplianceRemarkNosqlPrimaryNodesAppliance_EncodeDecode(t *testing.T) {
+	var typ NosqlApplianceRemarkNosqlPrimaryNodesAppliance
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlApplianceRemarkNosqlPrimaryNodesAppliance
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone_EncodeDecode(t *testing.T) {
+	var typ NosqlApplianceRemarkNosqlPrimaryNodesApplianceZone
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlApplianceRemarkNosqlPrimaryNodesApplianceZone
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
 func TestNosqlApplianceRemarkNosqlStorage_EncodeDecode(t *testing.T) {
 	var typ NosqlApplianceRemarkNosqlStorage
 	typ.SetFake()
@@ -521,6 +1237,30 @@ func TestNosqlCreateRequestAppliance_EncodeDecode(t *testing.T) {
 	var typ2 NosqlCreateRequestAppliance
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
+func TestNosqlCreateRequestApplianceDisk_EncodeDecode(t *testing.T) {
+	var typ NosqlCreateRequestApplianceDisk
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlCreateRequestApplianceDisk
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlCreateRequestApplianceDiskEncryptionKey_EncodeDecode(t *testing.T) {
+	var typ NosqlCreateRequestApplianceDiskEncryptionKey
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlCreateRequestApplianceDiskEncryptionKey
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
 func TestNosqlCreateRequestApplianceSettings_EncodeDecode(t *testing.T) {
 	var typ NosqlCreateRequestApplianceSettings
 	typ.SetFake()
@@ -555,6 +1295,136 @@ func TestNosqlCreateRequestApplianceSettingsBackupDayOfWeekItem_EncodeDecode(t *
 	require.True(t, std.Valid(data), "Encoded: %s", data)
 
 	var typ2 NosqlCreateRequestApplianceSettingsBackupDayOfWeekItem
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlCreateRequestApplianceSettingsRepair_EncodeDecode(t *testing.T) {
+	var typ NosqlCreateRequestApplianceSettingsRepair
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlCreateRequestApplianceSettingsRepair
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlCreateRequestApplianceSettingsRepairFull_EncodeDecode(t *testing.T) {
+	var typ NosqlCreateRequestApplianceSettingsRepairFull
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlCreateRequestApplianceSettingsRepairFull
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlCreateRequestApplianceSettingsRepairFullDayOfWeek_EncodeDecode(t *testing.T) {
+	var typ NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestNosqlCreateRequestApplianceSettingsRepairFullDayOfWeek_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "\"sun\""},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
+func TestNosqlCreateRequestApplianceSettingsRepairFullInterval_EncodeDecode(t *testing.T) {
+	var typ NosqlCreateRequestApplianceSettingsRepairFullInterval
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlCreateRequestApplianceSettingsRepairFullInterval
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestNosqlCreateRequestApplianceSettingsRepairFullInterval_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "7"},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ NosqlCreateRequestApplianceSettingsRepairFullInterval
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 NosqlCreateRequestApplianceSettingsRepairFullInterval
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
+func TestNosqlCreateRequestApplianceSettingsRepairIncremental_EncodeDecode(t *testing.T) {
+	var typ NosqlCreateRequestApplianceSettingsRepairIncremental
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlCreateRequestApplianceSettingsRepairIncremental
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem_EncodeDecode(t *testing.T) {
+	var typ NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
 func TestNosqlCreateRequestApplianceUserInterfacesItem_EncodeDecode(t *testing.T) {
@@ -629,8 +1499,8 @@ func TestNosqlCreateResponseHiddenRemark_EncodeDecode(t *testing.T) {
 	var typ2 NosqlCreateResponseHiddenRemark
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
-func TestNosqlCreateResponseHiddenRemarkEncripted_EncodeDecode(t *testing.T) {
-	var typ NosqlCreateResponseHiddenRemarkEncripted
+func TestNosqlCreateResponseHiddenRemarkEncrypted_EncodeDecode(t *testing.T) {
+	var typ NosqlCreateResponseHiddenRemarkEncrypted
 	typ.SetFake()
 
 	e := jx.Encoder{}
@@ -638,7 +1508,7 @@ func TestNosqlCreateResponseHiddenRemarkEncripted_EncodeDecode(t *testing.T) {
 	data := e.Bytes()
 	require.True(t, std.Valid(data), "Encoded: %s", data)
 
-	var typ2 NosqlCreateResponseHiddenRemarkEncripted
+	var typ2 NosqlCreateResponseHiddenRemarkEncrypted
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
 func TestNosqlCreateResponseHiddenRemarkPlanSpec_EncodeDecode(t *testing.T) {
@@ -761,6 +1631,30 @@ func TestNosqlListResponse_EncodeDecode(t *testing.T) {
 	var typ2 NosqlListResponse
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
+func TestNosqlNodeAppliance_EncodeDecode(t *testing.T) {
+	var typ NosqlNodeAppliance
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlNodeAppliance
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlNodeApplianceZone_EncodeDecode(t *testing.T) {
+	var typ NosqlNodeApplianceZone
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlNodeApplianceZone
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
 func TestNosqlOkResponse_EncodeDecode(t *testing.T) {
 	var typ NosqlOkResponse
 	typ.SetFake()
@@ -809,18 +1703,6 @@ func TestNosqlPutVersionRequest_EncodeDecode(t *testing.T) {
 	var typ2 NosqlPutVersionRequest
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
-func TestNosqlPutVersionRequestNosql_EncodeDecode(t *testing.T) {
-	var typ NosqlPutVersionRequestNosql
-	typ.SetFake()
-
-	e := jx.Encoder{}
-	typ.Encode(&e)
-	data := e.Bytes()
-	require.True(t, std.Valid(data), "Encoded: %s", data)
-
-	var typ2 NosqlPutVersionRequestNosql
-	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
-}
 func TestNosqlPutVersionResponse_EncodeDecode(t *testing.T) {
 	var typ NosqlPutVersionResponse
 	typ.SetFake()
@@ -831,18 +1713,6 @@ func TestNosqlPutVersionResponse_EncodeDecode(t *testing.T) {
 	require.True(t, std.Valid(data), "Encoded: %s", data)
 
 	var typ2 NosqlPutVersionResponse
-	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
-}
-func TestNosqlPutVersionResponseNosql_EncodeDecode(t *testing.T) {
-	var typ NosqlPutVersionResponseNosql
-	typ.SetFake()
-
-	e := jx.Encoder{}
-	typ.Encode(&e)
-	data := e.Bytes()
-	require.True(t, std.Valid(data), "Encoded: %s", data)
-
-	var typ2 NosqlPutVersionResponseNosql
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
 func TestNosqlRemark_EncodeDecode(t *testing.T) {
@@ -992,6 +1862,42 @@ func TestNosqlRemarkNosqlMemory_Examples(t *testing.T) {
 		})
 	}
 }
+func TestNosqlRemarkNosqlPrimaryNodes_EncodeDecode(t *testing.T) {
+	var typ NosqlRemarkNosqlPrimaryNodes
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlRemarkNosqlPrimaryNodes
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlRemarkNosqlPrimaryNodesAppliance_EncodeDecode(t *testing.T) {
+	var typ NosqlRemarkNosqlPrimaryNodesAppliance
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlRemarkNosqlPrimaryNodesAppliance
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlRemarkNosqlPrimaryNodesApplianceZone_EncodeDecode(t *testing.T) {
+	var typ NosqlRemarkNosqlPrimaryNodesApplianceZone
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlRemarkNosqlPrimaryNodesApplianceZone
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
 func TestNosqlRemarkNosqlStorage_EncodeDecode(t *testing.T) {
 	var typ NosqlRemarkNosqlStorage
 	typ.SetFake()
@@ -1086,6 +1992,71 @@ func TestNosqlRemarkServersItem_EncodeDecode(t *testing.T) {
 	var typ2 NosqlRemarkServersItem
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
+func TestNosqlRepairRequest_EncodeDecode(t *testing.T) {
+	var typ NosqlRepairRequest
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlRepairRequest
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlRepairRequestNosql_EncodeDecode(t *testing.T) {
+	var typ NosqlRepairRequestNosql
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlRepairRequestNosql
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlRepairRequestNosqlRepairType_EncodeDecode(t *testing.T) {
+	var typ NosqlRepairRequestNosqlRepairType
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlRepairRequestNosqlRepairType
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestNosqlRepairRequestNosqlRepairType_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "\"Incremental\""},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ NosqlRepairRequestNosqlRepairType
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 NosqlRepairRequestNosqlRepairType
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
 func TestNosqlSettings_EncodeDecode(t *testing.T) {
 	var typ NosqlSettings
 	typ.SetFake()
@@ -1120,6 +2091,136 @@ func TestNosqlSettingsBackupDayOfWeekItem_EncodeDecode(t *testing.T) {
 	require.True(t, std.Valid(data), "Encoded: %s", data)
 
 	var typ2 NosqlSettingsBackupDayOfWeekItem
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlSettingsRepair_EncodeDecode(t *testing.T) {
+	var typ NosqlSettingsRepair
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlSettingsRepair
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlSettingsRepairFull_EncodeDecode(t *testing.T) {
+	var typ NosqlSettingsRepairFull
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlSettingsRepairFull
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlSettingsRepairFullDayOfWeek_EncodeDecode(t *testing.T) {
+	var typ NosqlSettingsRepairFullDayOfWeek
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlSettingsRepairFullDayOfWeek
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestNosqlSettingsRepairFullDayOfWeek_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "\"sun\""},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ NosqlSettingsRepairFullDayOfWeek
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 NosqlSettingsRepairFullDayOfWeek
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
+func TestNosqlSettingsRepairFullInterval_EncodeDecode(t *testing.T) {
+	var typ NosqlSettingsRepairFullInterval
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlSettingsRepairFullInterval
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestNosqlSettingsRepairFullInterval_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "7"},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ NosqlSettingsRepairFullInterval
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 NosqlSettingsRepairFullInterval
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
+func TestNosqlSettingsRepairIncremental_EncodeDecode(t *testing.T) {
+	var typ NosqlSettingsRepairIncremental
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlSettingsRepairIncremental
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlSettingsRepairIncrementalDaysOfWeekItem_EncodeDecode(t *testing.T) {
+	var typ NosqlSettingsRepairIncrementalDaysOfWeekItem
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlSettingsRepairIncrementalDaysOfWeekItem
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
 func TestNosqlStatusResponse_EncodeDecode(t *testing.T) {
@@ -1170,6 +2271,18 @@ func TestNosqlStatusResponseApplianceSettingsResponseNosql_EncodeDecode(t *testi
 	var typ2 NosqlStatusResponseApplianceSettingsResponseNosql
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
+func TestNosqlStatusResponseApplianceSettingsResponseNosqlAddNodesItem_EncodeDecode(t *testing.T) {
+	var typ NosqlStatusResponseApplianceSettingsResponseNosqlAddNodesItem
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlStatusResponseApplianceSettingsResponseNosqlAddNodesItem
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
 func TestNosqlStatusResponseApplianceSettingsResponseNosqlJobsItem_EncodeDecode(t *testing.T) {
 	var typ NosqlStatusResponseApplianceSettingsResponseNosqlJobsItem
 	typ.SetFake()
@@ -1180,6 +2293,18 @@ func TestNosqlStatusResponseApplianceSettingsResponseNosqlJobsItem_EncodeDecode(
 	require.True(t, std.Valid(data), "Encoded: %s", data)
 
 	var typ2 NosqlStatusResponseApplianceSettingsResponseNosqlJobsItem
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes_EncodeDecode(t *testing.T) {
+	var typ NosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
 func TestNosqlSuccessResponse_EncodeDecode(t *testing.T) {
@@ -1253,6 +2378,201 @@ func TestNosqlUpdateRequestApplianceSettingsBackupDayOfWeekItem_EncodeDecode(t *
 
 	var typ2 NosqlUpdateRequestApplianceSettingsBackupDayOfWeekItem
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlUpdateRequestApplianceSettingsRepair_EncodeDecode(t *testing.T) {
+	var typ NosqlUpdateRequestApplianceSettingsRepair
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlUpdateRequestApplianceSettingsRepair
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlUpdateRequestApplianceSettingsRepairFull_EncodeDecode(t *testing.T) {
+	var typ NosqlUpdateRequestApplianceSettingsRepairFull
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlUpdateRequestApplianceSettingsRepairFull
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek_EncodeDecode(t *testing.T) {
+	var typ NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestNosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "\"sun\""},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
+func TestNosqlUpdateRequestApplianceSettingsRepairFullInterval_EncodeDecode(t *testing.T) {
+	var typ NosqlUpdateRequestApplianceSettingsRepairFullInterval
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlUpdateRequestApplianceSettingsRepairFullInterval
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestNosqlUpdateRequestApplianceSettingsRepairFullInterval_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "7"},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ NosqlUpdateRequestApplianceSettingsRepairFullInterval
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 NosqlUpdateRequestApplianceSettingsRepairFullInterval
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
+}
+func TestNosqlUpdateRequestApplianceSettingsRepairIncremental_EncodeDecode(t *testing.T) {
+	var typ NosqlUpdateRequestApplianceSettingsRepairIncremental
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlUpdateRequestApplianceSettingsRepairIncremental
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem_EncodeDecode(t *testing.T) {
+	var typ NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlVersion_EncodeDecode(t *testing.T) {
+	var typ NosqlVersion
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlVersion
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqldbNodeStatus_EncodeDecode(t *testing.T) {
+	var typ NosqldbNodeStatus
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqldbNodeStatus
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqldbNodeStatusNodeType_EncodeDecode(t *testing.T) {
+	var typ NosqldbNodeStatusNodeType
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqldbNodeStatusNodeType
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+
+func TestNosqldbNodeStatusNodeType_Examples(t *testing.T) {
+
+	for i, tc := range []struct {
+		Input string
+	}{
+		{Input: "\"0\""},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Test%d", i+1), func(t *testing.T) {
+			var typ NosqldbNodeStatusNodeType
+
+			if err := typ.Decode(jx.DecodeStr(tc.Input)); err != nil {
+				if validateErr, ok := errors.Into[*validate.Error](err); ok {
+					t.Skipf("Validation error: %v", validateErr)
+					return
+				}
+				require.NoErrorf(t, err, "Input: %s", tc.Input)
+			}
+
+			e := jx.Encoder{}
+			typ.Encode(&e)
+			require.True(t, std.Valid(e.Bytes()), "Encoded: %s", e.Bytes())
+
+			var typ2 NosqldbNodeStatusNodeType
+			require.NoError(t, typ2.Decode(jx.DecodeBytes(e.Bytes())))
+		})
+	}
 }
 func TestNotFoundResponse_EncodeDecode(t *testing.T) {
 	var typ NotFoundResponse
@@ -1336,6 +2656,30 @@ func TestPutParameterResponseNosql_EncodeDecode(t *testing.T) {
 	require.True(t, std.Valid(data), "Encoded: %s", data)
 
 	var typ2 PutParameterResponseNosql
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestRecoverNoSQLNodeAccepted_EncodeDecode(t *testing.T) {
+	var typ RecoverNoSQLNodeAccepted
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 RecoverNoSQLNodeAccepted
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestRecoverNoSQLNodeOK_EncodeDecode(t *testing.T) {
+	var typ RecoverNoSQLNodeOK
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 RecoverNoSQLNodeOK
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
 func TestServerErrorResponse_EncodeDecode(t *testing.T) {

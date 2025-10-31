@@ -10,7 +10,60 @@ import (
 	"github.com/google/uuid"
 )
 
+// NoSQLの利用可能状態
+// | 値        | 説明       |
+// |-----------|------------|
+// | migrating | 準備中     |
+// | available | 利用可能   |
+// | failed    | 利用不可   |.
+// Ref: #/components/schemas/Availability
 type Availability string
+
+const (
+	AvailabilityMigrating Availability = "migrating"
+	AvailabilityAvailable Availability = "available"
+	AvailabilityFailed    Availability = "failed"
+)
+
+// AllValues returns all Availability values.
+func (Availability) AllValues() []Availability {
+	return []Availability{
+		AvailabilityMigrating,
+		AvailabilityAvailable,
+		AvailabilityFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s Availability) MarshalText() ([]byte, error) {
+	switch s {
+	case AvailabilityMigrating:
+		return []byte(s), nil
+	case AvailabilityAvailable:
+		return []byte(s), nil
+	case AvailabilityFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *Availability) UnmarshalText(data []byte) error {
+	switch Availability(data) {
+	case AvailabilityMigrating:
+		*s = AvailabilityMigrating
+		return nil
+	case AvailabilityAvailable:
+		*s = AvailabilityAvailable
+		return nil
+	case AvailabilityFailed:
+		*s = AvailabilityFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 // エラーレスポンス.
 type BadRequestResponse struct {
@@ -84,18 +137,22 @@ func (*BadRequestResponse) deleteBackupRes()           {}
 func (*BadRequestResponse) deleteDBRes()               {}
 func (*BadRequestResponse) getBackupByApplianceIDRes() {}
 func (*BadRequestResponse) getDBRes()                  {}
+func (*BadRequestResponse) getNoSQLNodeHealthRes()     {}
 func (*BadRequestResponse) getParameterRes()           {}
 func (*BadRequestResponse) getVersionRes()             {}
 func (*BadRequestResponse) listDBRes()                 {}
+func (*BadRequestResponse) postNoSQLRepairRes()        {}
 func (*BadRequestResponse) putAppliancePowerRes()      {}
 func (*BadRequestResponse) putParameterRes()           {}
 func (*BadRequestResponse) putVersionRes()             {}
+func (*BadRequestResponse) recoverNoSQLNodeRes()       {}
 func (*BadRequestResponse) restoreBackupRes()          {}
 func (*BadRequestResponse) updateConfigDBRes()         {}
 func (*BadRequestResponse) updateDBRes()               {}
 
 // エラーレスポンス.
-type ConflictResponse struct {
+// Ref: #/components/schemas/ConflictErrorResponse
+type ConflictErrorResponse struct {
 	// エラーのレスポンス(true:エラー).
 	IsFatal OptBool `json:"is_fatal"`
 	// 追跡コード.
@@ -109,56 +166,1344 @@ type ConflictResponse struct {
 }
 
 // GetIsFatal returns the value of IsFatal.
-func (s *ConflictResponse) GetIsFatal() OptBool {
+func (s *ConflictErrorResponse) GetIsFatal() OptBool {
 	return s.IsFatal
 }
 
 // GetSerial returns the value of Serial.
-func (s *ConflictResponse) GetSerial() OptString {
+func (s *ConflictErrorResponse) GetSerial() OptString {
 	return s.Serial
 }
 
 // GetStatus returns the value of Status.
-func (s *ConflictResponse) GetStatus() OptString {
+func (s *ConflictErrorResponse) GetStatus() OptString {
 	return s.Status
 }
 
 // GetErrorCode returns the value of ErrorCode.
-func (s *ConflictResponse) GetErrorCode() OptString {
+func (s *ConflictErrorResponse) GetErrorCode() OptString {
 	return s.ErrorCode
 }
 
 // GetErrorMsg returns the value of ErrorMsg.
-func (s *ConflictResponse) GetErrorMsg() OptString {
+func (s *ConflictErrorResponse) GetErrorMsg() OptString {
 	return s.ErrorMsg
 }
 
 // SetIsFatal sets the value of IsFatal.
-func (s *ConflictResponse) SetIsFatal(val OptBool) {
+func (s *ConflictErrorResponse) SetIsFatal(val OptBool) {
 	s.IsFatal = val
 }
 
 // SetSerial sets the value of Serial.
-func (s *ConflictResponse) SetSerial(val OptString) {
+func (s *ConflictErrorResponse) SetSerial(val OptString) {
 	s.Serial = val
 }
 
 // SetStatus sets the value of Status.
-func (s *ConflictResponse) SetStatus(val OptString) {
+func (s *ConflictErrorResponse) SetStatus(val OptString) {
 	s.Status = val
 }
 
 // SetErrorCode sets the value of ErrorCode.
-func (s *ConflictResponse) SetErrorCode(val OptString) {
+func (s *ConflictErrorResponse) SetErrorCode(val OptString) {
 	s.ErrorCode = val
 }
 
 // SetErrorMsg sets the value of ErrorMsg.
-func (s *ConflictResponse) SetErrorMsg(val OptString) {
+func (s *ConflictErrorResponse) SetErrorMsg(val OptString) {
 	s.ErrorMsg = val
 }
 
-func (*ConflictResponse) createDBRes() {}
+func (*ConflictErrorResponse) createBackupRes()         {}
+func (*ConflictErrorResponse) createDBRes()             {}
+func (*ConflictErrorResponse) deleteAppliancePowerRes() {}
+func (*ConflictErrorResponse) deleteBackupRes()         {}
+func (*ConflictErrorResponse) deleteDBRes()             {}
+func (*ConflictErrorResponse) postNoSQLRepairRes()      {}
+func (*ConflictErrorResponse) putAppliancePowerRes()    {}
+func (*ConflictErrorResponse) putParameterRes()         {}
+func (*ConflictErrorResponse) putVersionRes()           {}
+func (*ConflictErrorResponse) recoverNoSQLNodeRes()     {}
+func (*ConflictErrorResponse) restoreBackupRes()        {}
+func (*ConflictErrorResponse) updateDBRes()             {}
+
+// Merged schema.
+// Ref: #/components/schemas/GetNosqlAppliance
+type GetNosqlAppliance struct {
+	// クラス.
+	Class OptString `json:"Class"`
+	// NoSQLの名前.
+	Name OptString `json:"Name"`
+	// NoSQLの説明.
+	Description OptString  `json:"Description"`
+	Tags        OptNilTags `json:"Tags"`
+	// アプライアンスID.
+	ID           OptString                  `json:"ID"`
+	Plan         OptGetPlan                 `json:"Plan"`
+	Settings     OptGetNosqlSettings        `json:"Settings"`
+	SettingsHash OptString                  `json:"SettingsHash"`
+	Remark       OptGetNosqlApplianceRemark `json:"Remark"`
+	Availability OptAvailability            `json:"Availability"`
+	Instance     OptInstance                `json:"Instance"`
+	// ディスク情報.
+	Disk         OptNilGetNosqlApplianceDisk       `json:"Disk"`
+	ServiceClass OptGetServiceClass                `json:"ServiceClass"`
+	Generation   OptInt                            `json:"Generation"`
+	CreatedAt    OptDateTime                       `json:"CreatedAt"`
+	Interfaces   []GetNosqlApplianceInterfacesItem `json:"Interfaces"`
+}
+
+// GetClass returns the value of Class.
+func (s *GetNosqlAppliance) GetClass() OptString {
+	return s.Class
+}
+
+// GetName returns the value of Name.
+func (s *GetNosqlAppliance) GetName() OptString {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *GetNosqlAppliance) GetDescription() OptString {
+	return s.Description
+}
+
+// GetTags returns the value of Tags.
+func (s *GetNosqlAppliance) GetTags() OptNilTags {
+	return s.Tags
+}
+
+// GetID returns the value of ID.
+func (s *GetNosqlAppliance) GetID() OptString {
+	return s.ID
+}
+
+// GetPlan returns the value of Plan.
+func (s *GetNosqlAppliance) GetPlan() OptGetPlan {
+	return s.Plan
+}
+
+// GetSettings returns the value of Settings.
+func (s *GetNosqlAppliance) GetSettings() OptGetNosqlSettings {
+	return s.Settings
+}
+
+// GetSettingsHash returns the value of SettingsHash.
+func (s *GetNosqlAppliance) GetSettingsHash() OptString {
+	return s.SettingsHash
+}
+
+// GetRemark returns the value of Remark.
+func (s *GetNosqlAppliance) GetRemark() OptGetNosqlApplianceRemark {
+	return s.Remark
+}
+
+// GetAvailability returns the value of Availability.
+func (s *GetNosqlAppliance) GetAvailability() OptAvailability {
+	return s.Availability
+}
+
+// GetInstance returns the value of Instance.
+func (s *GetNosqlAppliance) GetInstance() OptInstance {
+	return s.Instance
+}
+
+// GetDisk returns the value of Disk.
+func (s *GetNosqlAppliance) GetDisk() OptNilGetNosqlApplianceDisk {
+	return s.Disk
+}
+
+// GetServiceClass returns the value of ServiceClass.
+func (s *GetNosqlAppliance) GetServiceClass() OptGetServiceClass {
+	return s.ServiceClass
+}
+
+// GetGeneration returns the value of Generation.
+func (s *GetNosqlAppliance) GetGeneration() OptInt {
+	return s.Generation
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *GetNosqlAppliance) GetCreatedAt() OptDateTime {
+	return s.CreatedAt
+}
+
+// GetInterfaces returns the value of Interfaces.
+func (s *GetNosqlAppliance) GetInterfaces() []GetNosqlApplianceInterfacesItem {
+	return s.Interfaces
+}
+
+// SetClass sets the value of Class.
+func (s *GetNosqlAppliance) SetClass(val OptString) {
+	s.Class = val
+}
+
+// SetName sets the value of Name.
+func (s *GetNosqlAppliance) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *GetNosqlAppliance) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetTags sets the value of Tags.
+func (s *GetNosqlAppliance) SetTags(val OptNilTags) {
+	s.Tags = val
+}
+
+// SetID sets the value of ID.
+func (s *GetNosqlAppliance) SetID(val OptString) {
+	s.ID = val
+}
+
+// SetPlan sets the value of Plan.
+func (s *GetNosqlAppliance) SetPlan(val OptGetPlan) {
+	s.Plan = val
+}
+
+// SetSettings sets the value of Settings.
+func (s *GetNosqlAppliance) SetSettings(val OptGetNosqlSettings) {
+	s.Settings = val
+}
+
+// SetSettingsHash sets the value of SettingsHash.
+func (s *GetNosqlAppliance) SetSettingsHash(val OptString) {
+	s.SettingsHash = val
+}
+
+// SetRemark sets the value of Remark.
+func (s *GetNosqlAppliance) SetRemark(val OptGetNosqlApplianceRemark) {
+	s.Remark = val
+}
+
+// SetAvailability sets the value of Availability.
+func (s *GetNosqlAppliance) SetAvailability(val OptAvailability) {
+	s.Availability = val
+}
+
+// SetInstance sets the value of Instance.
+func (s *GetNosqlAppliance) SetInstance(val OptInstance) {
+	s.Instance = val
+}
+
+// SetDisk sets the value of Disk.
+func (s *GetNosqlAppliance) SetDisk(val OptNilGetNosqlApplianceDisk) {
+	s.Disk = val
+}
+
+// SetServiceClass sets the value of ServiceClass.
+func (s *GetNosqlAppliance) SetServiceClass(val OptGetServiceClass) {
+	s.ServiceClass = val
+}
+
+// SetGeneration sets the value of Generation.
+func (s *GetNosqlAppliance) SetGeneration(val OptInt) {
+	s.Generation = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *GetNosqlAppliance) SetCreatedAt(val OptDateTime) {
+	s.CreatedAt = val
+}
+
+// SetInterfaces sets the value of Interfaces.
+func (s *GetNosqlAppliance) SetInterfaces(val []GetNosqlApplianceInterfacesItem) {
+	s.Interfaces = val
+}
+
+// ディスク情報.
+type GetNosqlApplianceDisk struct {
+	// 暗号化キー情報.
+	EncryptionKey OptNilGetNosqlApplianceDiskEncryptionKey `json:"EncryptionKey"`
+	// 暗号化アルゴリズム.
+	EncryptionAlgorithm OptString `json:"EncryptionAlgorithm"`
+}
+
+// GetEncryptionKey returns the value of EncryptionKey.
+func (s *GetNosqlApplianceDisk) GetEncryptionKey() OptNilGetNosqlApplianceDiskEncryptionKey {
+	return s.EncryptionKey
+}
+
+// GetEncryptionAlgorithm returns the value of EncryptionAlgorithm.
+func (s *GetNosqlApplianceDisk) GetEncryptionAlgorithm() OptString {
+	return s.EncryptionAlgorithm
+}
+
+// SetEncryptionKey sets the value of EncryptionKey.
+func (s *GetNosqlApplianceDisk) SetEncryptionKey(val OptNilGetNosqlApplianceDiskEncryptionKey) {
+	s.EncryptionKey = val
+}
+
+// SetEncryptionAlgorithm sets the value of EncryptionAlgorithm.
+func (s *GetNosqlApplianceDisk) SetEncryptionAlgorithm(val OptString) {
+	s.EncryptionAlgorithm = val
+}
+
+// 暗号化キー情報.
+type GetNosqlApplianceDiskEncryptionKey struct {
+	// KMSキーID.
+	KMSKeyID OptString `json:"KMSKeyID"`
+}
+
+// GetKMSKeyID returns the value of KMSKeyID.
+func (s *GetNosqlApplianceDiskEncryptionKey) GetKMSKeyID() OptString {
+	return s.KMSKeyID
+}
+
+// SetKMSKeyID sets the value of KMSKeyID.
+func (s *GetNosqlApplianceDiskEncryptionKey) SetKMSKeyID(val OptString) {
+	s.KMSKeyID = val
+}
+
+type GetNosqlApplianceInterfacesItem struct {
+	// IPアドレス.
+	IPAddress OptNilString `json:"IPAddress"`
+	// ユーザ側スイッチに接続するIPアドレス.
+	UserIPAddress OptNilString `json:"UserIPAddress"`
+	// ホスト名.
+	HostName OptNilString `json:"HostName"`
+	// スイッチ情報.
+	Switch OptGetNosqlApplianceInterfacesItemSwitch `json:"Switch"`
+}
+
+// GetIPAddress returns the value of IPAddress.
+func (s *GetNosqlApplianceInterfacesItem) GetIPAddress() OptNilString {
+	return s.IPAddress
+}
+
+// GetUserIPAddress returns the value of UserIPAddress.
+func (s *GetNosqlApplianceInterfacesItem) GetUserIPAddress() OptNilString {
+	return s.UserIPAddress
+}
+
+// GetHostName returns the value of HostName.
+func (s *GetNosqlApplianceInterfacesItem) GetHostName() OptNilString {
+	return s.HostName
+}
+
+// GetSwitch returns the value of Switch.
+func (s *GetNosqlApplianceInterfacesItem) GetSwitch() OptGetNosqlApplianceInterfacesItemSwitch {
+	return s.Switch
+}
+
+// SetIPAddress sets the value of IPAddress.
+func (s *GetNosqlApplianceInterfacesItem) SetIPAddress(val OptNilString) {
+	s.IPAddress = val
+}
+
+// SetUserIPAddress sets the value of UserIPAddress.
+func (s *GetNosqlApplianceInterfacesItem) SetUserIPAddress(val OptNilString) {
+	s.UserIPAddress = val
+}
+
+// SetHostName sets the value of HostName.
+func (s *GetNosqlApplianceInterfacesItem) SetHostName(val OptNilString) {
+	s.HostName = val
+}
+
+// SetSwitch sets the value of Switch.
+func (s *GetNosqlApplianceInterfacesItem) SetSwitch(val OptGetNosqlApplianceInterfacesItemSwitch) {
+	s.Switch = val
+}
+
+// スイッチ情報.
+type GetNosqlApplianceInterfacesItemSwitch struct {
+	// スイッチID.
+	ID OptString `json:"ID"`
+	// スイッチ名.
+	Name OptString `json:"name"`
+	// スコープ(shared/user).
+	Scope OptString `json:"Scope"`
+	// サブネット情報.
+	Subnet OptNilGetNosqlApplianceInterfacesItemSwitchSubnet `json:"Subnet"`
+	// ユーザサブネット情報.
+	UserSubnet OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet `json:"UserSubnet"`
+}
+
+// GetID returns the value of ID.
+func (s *GetNosqlApplianceInterfacesItemSwitch) GetID() OptString {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *GetNosqlApplianceInterfacesItemSwitch) GetName() OptString {
+	return s.Name
+}
+
+// GetScope returns the value of Scope.
+func (s *GetNosqlApplianceInterfacesItemSwitch) GetScope() OptString {
+	return s.Scope
+}
+
+// GetSubnet returns the value of Subnet.
+func (s *GetNosqlApplianceInterfacesItemSwitch) GetSubnet() OptNilGetNosqlApplianceInterfacesItemSwitchSubnet {
+	return s.Subnet
+}
+
+// GetUserSubnet returns the value of UserSubnet.
+func (s *GetNosqlApplianceInterfacesItemSwitch) GetUserSubnet() OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet {
+	return s.UserSubnet
+}
+
+// SetID sets the value of ID.
+func (s *GetNosqlApplianceInterfacesItemSwitch) SetID(val OptString) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *GetNosqlApplianceInterfacesItemSwitch) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetScope sets the value of Scope.
+func (s *GetNosqlApplianceInterfacesItemSwitch) SetScope(val OptString) {
+	s.Scope = val
+}
+
+// SetSubnet sets the value of Subnet.
+func (s *GetNosqlApplianceInterfacesItemSwitch) SetSubnet(val OptNilGetNosqlApplianceInterfacesItemSwitchSubnet) {
+	s.Subnet = val
+}
+
+// SetUserSubnet sets the value of UserSubnet.
+func (s *GetNosqlApplianceInterfacesItemSwitch) SetUserSubnet(val OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) {
+	s.UserSubnet = val
+}
+
+// サブネット情報.
+type GetNosqlApplianceInterfacesItemSwitchSubnet struct {
+	// ネットワークアドレス.
+	NetworkAddress OptString `json:"NetworkAddress"`
+	// ネットマスク.
+	NetworkMaskLen OptInt `json:"NetworkMaskLen"`
+	// ゲートウェイのアドレス.
+	DefaultRoute OptNilString                                           `json:"DefaultRoute"`
+	Internet     OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet `json:"Internet"`
+}
+
+// GetNetworkAddress returns the value of NetworkAddress.
+func (s *GetNosqlApplianceInterfacesItemSwitchSubnet) GetNetworkAddress() OptString {
+	return s.NetworkAddress
+}
+
+// GetNetworkMaskLen returns the value of NetworkMaskLen.
+func (s *GetNosqlApplianceInterfacesItemSwitchSubnet) GetNetworkMaskLen() OptInt {
+	return s.NetworkMaskLen
+}
+
+// GetDefaultRoute returns the value of DefaultRoute.
+func (s *GetNosqlApplianceInterfacesItemSwitchSubnet) GetDefaultRoute() OptNilString {
+	return s.DefaultRoute
+}
+
+// GetInternet returns the value of Internet.
+func (s *GetNosqlApplianceInterfacesItemSwitchSubnet) GetInternet() OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet {
+	return s.Internet
+}
+
+// SetNetworkAddress sets the value of NetworkAddress.
+func (s *GetNosqlApplianceInterfacesItemSwitchSubnet) SetNetworkAddress(val OptString) {
+	s.NetworkAddress = val
+}
+
+// SetNetworkMaskLen sets the value of NetworkMaskLen.
+func (s *GetNosqlApplianceInterfacesItemSwitchSubnet) SetNetworkMaskLen(val OptInt) {
+	s.NetworkMaskLen = val
+}
+
+// SetDefaultRoute sets the value of DefaultRoute.
+func (s *GetNosqlApplianceInterfacesItemSwitchSubnet) SetDefaultRoute(val OptNilString) {
+	s.DefaultRoute = val
+}
+
+// SetInternet sets the value of Internet.
+func (s *GetNosqlApplianceInterfacesItemSwitchSubnet) SetInternet(val OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet) {
+	s.Internet = val
+}
+
+type GetNosqlApplianceInterfacesItemSwitchSubnetInternet struct {
+	BandWidthMbps OptInt `json:"BandWidthMbps"`
+}
+
+// GetBandWidthMbps returns the value of BandWidthMbps.
+func (s *GetNosqlApplianceInterfacesItemSwitchSubnetInternet) GetBandWidthMbps() OptInt {
+	return s.BandWidthMbps
+}
+
+// SetBandWidthMbps sets the value of BandWidthMbps.
+func (s *GetNosqlApplianceInterfacesItemSwitchSubnetInternet) SetBandWidthMbps(val OptInt) {
+	s.BandWidthMbps = val
+}
+
+// ユーザサブネット情報.
+type GetNosqlApplianceInterfacesItemSwitchUserSubnet struct {
+	// ゲートウェイのアドレス.
+	DefaultRoute OptNilString `json:"DefaultRoute"`
+	// ネットマスク.
+	NetworkMaskLen OptInt `json:"NetworkMaskLen"`
+}
+
+// GetDefaultRoute returns the value of DefaultRoute.
+func (s *GetNosqlApplianceInterfacesItemSwitchUserSubnet) GetDefaultRoute() OptNilString {
+	return s.DefaultRoute
+}
+
+// GetNetworkMaskLen returns the value of NetworkMaskLen.
+func (s *GetNosqlApplianceInterfacesItemSwitchUserSubnet) GetNetworkMaskLen() OptInt {
+	return s.NetworkMaskLen
+}
+
+// SetDefaultRoute sets the value of DefaultRoute.
+func (s *GetNosqlApplianceInterfacesItemSwitchUserSubnet) SetDefaultRoute(val OptNilString) {
+	s.DefaultRoute = val
+}
+
+// SetNetworkMaskLen sets the value of NetworkMaskLen.
+func (s *GetNosqlApplianceInterfacesItemSwitchUserSubnet) SetNetworkMaskLen(val OptInt) {
+	s.NetworkMaskLen = val
+}
+
+// Merged schema.
+type GetNosqlApplianceRemark struct {
+	Nosql   OptGetNosqlApplianceRemarkNosql      `json:"Nosql"`
+	Servers []GetNosqlApplianceRemarkServersItem `json:"Servers"`
+	// ゾーン.
+	Zone OptGetNosqlApplianceRemarkZone `json:"Zone"`
+	// サービスクラス.
+	ServiceClass OptString `json:"ServiceClass"`
+}
+
+// GetNosql returns the value of Nosql.
+func (s *GetNosqlApplianceRemark) GetNosql() OptGetNosqlApplianceRemarkNosql {
+	return s.Nosql
+}
+
+// GetServers returns the value of Servers.
+func (s *GetNosqlApplianceRemark) GetServers() []GetNosqlApplianceRemarkServersItem {
+	return s.Servers
+}
+
+// GetZone returns the value of Zone.
+func (s *GetNosqlApplianceRemark) GetZone() OptGetNosqlApplianceRemarkZone {
+	return s.Zone
+}
+
+// GetServiceClass returns the value of ServiceClass.
+func (s *GetNosqlApplianceRemark) GetServiceClass() OptString {
+	return s.ServiceClass
+}
+
+// SetNosql sets the value of Nosql.
+func (s *GetNosqlApplianceRemark) SetNosql(val OptGetNosqlApplianceRemarkNosql) {
+	s.Nosql = val
+}
+
+// SetServers sets the value of Servers.
+func (s *GetNosqlApplianceRemark) SetServers(val []GetNosqlApplianceRemarkServersItem) {
+	s.Servers = val
+}
+
+// SetZone sets the value of Zone.
+func (s *GetNosqlApplianceRemark) SetZone(val OptGetNosqlApplianceRemarkZone) {
+	s.Zone = val
+}
+
+// SetServiceClass sets the value of ServiceClass.
+func (s *GetNosqlApplianceRemark) SetServiceClass(val OptString) {
+	s.ServiceClass = val
+}
+
+type GetNosqlApplianceRemarkNosql struct {
+	// プライマリノード情報.
+	PrimaryNodes OptGetNosqlApplianceRemarkNosqlPrimaryNodes `json:"PrimaryNodes"`
+	// データベースに使用するエンジン.
+	DatabaseEngine OptGetNosqlApplianceRemarkNosqlDatabaseEngine `json:"DatabaseEngine"`
+	// データベースバージョン.
+	DatabaseVersion OptString `json:"DatabaseVersion"`
+	// デフォルトユーザ名.
+	DefaultUser OptString `json:"DefaultUser"`
+	// ディスクサイズ(MB).
+	DiskSize OptGetNosqlApplianceRemarkNosqlDiskSize `json:"DiskSize"`
+	// メモリ(MB).
+	Memory OptGetNosqlApplianceRemarkNosqlMemory `json:"Memory"`
+	// ノード数.
+	Nodes OptInt `json:"Nodes"`
+	// ポート.
+	Port OptInt `json:"Port"`
+	// ストレージ.
+	Storage OptGetNosqlApplianceRemarkNosqlStorage `json:"Storage"`
+	// 仮想コア.
+	Virtualcore OptGetNosqlApplianceRemarkNosqlVirtualcore `json:"Virtualcore"`
+	// ゾーン.
+	Zone OptString `json:"Zone"`
+}
+
+// GetPrimaryNodes returns the value of PrimaryNodes.
+func (s *GetNosqlApplianceRemarkNosql) GetPrimaryNodes() OptGetNosqlApplianceRemarkNosqlPrimaryNodes {
+	return s.PrimaryNodes
+}
+
+// GetDatabaseEngine returns the value of DatabaseEngine.
+func (s *GetNosqlApplianceRemarkNosql) GetDatabaseEngine() OptGetNosqlApplianceRemarkNosqlDatabaseEngine {
+	return s.DatabaseEngine
+}
+
+// GetDatabaseVersion returns the value of DatabaseVersion.
+func (s *GetNosqlApplianceRemarkNosql) GetDatabaseVersion() OptString {
+	return s.DatabaseVersion
+}
+
+// GetDefaultUser returns the value of DefaultUser.
+func (s *GetNosqlApplianceRemarkNosql) GetDefaultUser() OptString {
+	return s.DefaultUser
+}
+
+// GetDiskSize returns the value of DiskSize.
+func (s *GetNosqlApplianceRemarkNosql) GetDiskSize() OptGetNosqlApplianceRemarkNosqlDiskSize {
+	return s.DiskSize
+}
+
+// GetMemory returns the value of Memory.
+func (s *GetNosqlApplianceRemarkNosql) GetMemory() OptGetNosqlApplianceRemarkNosqlMemory {
+	return s.Memory
+}
+
+// GetNodes returns the value of Nodes.
+func (s *GetNosqlApplianceRemarkNosql) GetNodes() OptInt {
+	return s.Nodes
+}
+
+// GetPort returns the value of Port.
+func (s *GetNosqlApplianceRemarkNosql) GetPort() OptInt {
+	return s.Port
+}
+
+// GetStorage returns the value of Storage.
+func (s *GetNosqlApplianceRemarkNosql) GetStorage() OptGetNosqlApplianceRemarkNosqlStorage {
+	return s.Storage
+}
+
+// GetVirtualcore returns the value of Virtualcore.
+func (s *GetNosqlApplianceRemarkNosql) GetVirtualcore() OptGetNosqlApplianceRemarkNosqlVirtualcore {
+	return s.Virtualcore
+}
+
+// GetZone returns the value of Zone.
+func (s *GetNosqlApplianceRemarkNosql) GetZone() OptString {
+	return s.Zone
+}
+
+// SetPrimaryNodes sets the value of PrimaryNodes.
+func (s *GetNosqlApplianceRemarkNosql) SetPrimaryNodes(val OptGetNosqlApplianceRemarkNosqlPrimaryNodes) {
+	s.PrimaryNodes = val
+}
+
+// SetDatabaseEngine sets the value of DatabaseEngine.
+func (s *GetNosqlApplianceRemarkNosql) SetDatabaseEngine(val OptGetNosqlApplianceRemarkNosqlDatabaseEngine) {
+	s.DatabaseEngine = val
+}
+
+// SetDatabaseVersion sets the value of DatabaseVersion.
+func (s *GetNosqlApplianceRemarkNosql) SetDatabaseVersion(val OptString) {
+	s.DatabaseVersion = val
+}
+
+// SetDefaultUser sets the value of DefaultUser.
+func (s *GetNosqlApplianceRemarkNosql) SetDefaultUser(val OptString) {
+	s.DefaultUser = val
+}
+
+// SetDiskSize sets the value of DiskSize.
+func (s *GetNosqlApplianceRemarkNosql) SetDiskSize(val OptGetNosqlApplianceRemarkNosqlDiskSize) {
+	s.DiskSize = val
+}
+
+// SetMemory sets the value of Memory.
+func (s *GetNosqlApplianceRemarkNosql) SetMemory(val OptGetNosqlApplianceRemarkNosqlMemory) {
+	s.Memory = val
+}
+
+// SetNodes sets the value of Nodes.
+func (s *GetNosqlApplianceRemarkNosql) SetNodes(val OptInt) {
+	s.Nodes = val
+}
+
+// SetPort sets the value of Port.
+func (s *GetNosqlApplianceRemarkNosql) SetPort(val OptInt) {
+	s.Port = val
+}
+
+// SetStorage sets the value of Storage.
+func (s *GetNosqlApplianceRemarkNosql) SetStorage(val OptGetNosqlApplianceRemarkNosqlStorage) {
+	s.Storage = val
+}
+
+// SetVirtualcore sets the value of Virtualcore.
+func (s *GetNosqlApplianceRemarkNosql) SetVirtualcore(val OptGetNosqlApplianceRemarkNosqlVirtualcore) {
+	s.Virtualcore = val
+}
+
+// SetZone sets the value of Zone.
+func (s *GetNosqlApplianceRemarkNosql) SetZone(val OptString) {
+	s.Zone = val
+}
+
+// データベースに使用するエンジン.
+type GetNosqlApplianceRemarkNosqlDatabaseEngine string
+
+const (
+	GetNosqlApplianceRemarkNosqlDatabaseEngineCassandra GetNosqlApplianceRemarkNosqlDatabaseEngine = "Cassandra"
+)
+
+// AllValues returns all GetNosqlApplianceRemarkNosqlDatabaseEngine values.
+func (GetNosqlApplianceRemarkNosqlDatabaseEngine) AllValues() []GetNosqlApplianceRemarkNosqlDatabaseEngine {
+	return []GetNosqlApplianceRemarkNosqlDatabaseEngine{
+		GetNosqlApplianceRemarkNosqlDatabaseEngineCassandra,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s GetNosqlApplianceRemarkNosqlDatabaseEngine) MarshalText() ([]byte, error) {
+	switch s {
+	case GetNosqlApplianceRemarkNosqlDatabaseEngineCassandra:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *GetNosqlApplianceRemarkNosqlDatabaseEngine) UnmarshalText(data []byte) error {
+	switch GetNosqlApplianceRemarkNosqlDatabaseEngine(data) {
+	case GetNosqlApplianceRemarkNosqlDatabaseEngineCassandra:
+		*s = GetNosqlApplianceRemarkNosqlDatabaseEngineCassandra
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// ディスクサイズ(MB).
+type GetNosqlApplianceRemarkNosqlDiskSize int
+
+const (
+	GetNosqlApplianceRemarkNosqlDiskSize102400 GetNosqlApplianceRemarkNosqlDiskSize = 102400
+)
+
+// AllValues returns all GetNosqlApplianceRemarkNosqlDiskSize values.
+func (GetNosqlApplianceRemarkNosqlDiskSize) AllValues() []GetNosqlApplianceRemarkNosqlDiskSize {
+	return []GetNosqlApplianceRemarkNosqlDiskSize{
+		GetNosqlApplianceRemarkNosqlDiskSize102400,
+	}
+}
+
+// メモリ(MB).
+type GetNosqlApplianceRemarkNosqlMemory int
+
+const (
+	GetNosqlApplianceRemarkNosqlMemory8192 GetNosqlApplianceRemarkNosqlMemory = 8192
+)
+
+// AllValues returns all GetNosqlApplianceRemarkNosqlMemory values.
+func (GetNosqlApplianceRemarkNosqlMemory) AllValues() []GetNosqlApplianceRemarkNosqlMemory {
+	return []GetNosqlApplianceRemarkNosqlMemory{
+		GetNosqlApplianceRemarkNosqlMemory8192,
+	}
+}
+
+// プライマリノード情報.
+type GetNosqlApplianceRemarkNosqlPrimaryNodes struct {
+	// 既存のNoSQLのアプライアンス情報.
+	Appliance OptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance `json:"Appliance"`
+}
+
+// GetAppliance returns the value of Appliance.
+func (s *GetNosqlApplianceRemarkNosqlPrimaryNodes) GetAppliance() OptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance {
+	return s.Appliance
+}
+
+// SetAppliance sets the value of Appliance.
+func (s *GetNosqlApplianceRemarkNosqlPrimaryNodes) SetAppliance(val OptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance) {
+	s.Appliance = val
+}
+
+// 既存のNoSQLのアプライアンス情報.
+type GetNosqlApplianceRemarkNosqlPrimaryNodesAppliance struct {
+	// 既存のNoSQLのアプライアンスID.
+	ID OptString `json:"ID"`
+	// 既存のNoSQLのゾーン.
+	Zone OptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone `json:"Zone"`
+}
+
+// GetID returns the value of ID.
+func (s *GetNosqlApplianceRemarkNosqlPrimaryNodesAppliance) GetID() OptString {
+	return s.ID
+}
+
+// GetZone returns the value of Zone.
+func (s *GetNosqlApplianceRemarkNosqlPrimaryNodesAppliance) GetZone() OptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone {
+	return s.Zone
+}
+
+// SetID sets the value of ID.
+func (s *GetNosqlApplianceRemarkNosqlPrimaryNodesAppliance) SetID(val OptString) {
+	s.ID = val
+}
+
+// SetZone sets the value of Zone.
+func (s *GetNosqlApplianceRemarkNosqlPrimaryNodesAppliance) SetZone(val OptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone) {
+	s.Zone = val
+}
+
+// 既存のNoSQLのゾーン.
+type GetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone struct {
+	// 既存のNoSQLのゾーン情報.
+	Name OptString `json:"Name"`
+}
+
+// GetName returns the value of Name.
+func (s *GetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone) GetName() OptString {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *GetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone) SetName(val OptString) {
+	s.Name = val
+}
+
+// ストレージ.
+type GetNosqlApplianceRemarkNosqlStorage string
+
+const (
+	GetNosqlApplianceRemarkNosqlStorageSSD GetNosqlApplianceRemarkNosqlStorage = "SSD"
+)
+
+// AllValues returns all GetNosqlApplianceRemarkNosqlStorage values.
+func (GetNosqlApplianceRemarkNosqlStorage) AllValues() []GetNosqlApplianceRemarkNosqlStorage {
+	return []GetNosqlApplianceRemarkNosqlStorage{
+		GetNosqlApplianceRemarkNosqlStorageSSD,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s GetNosqlApplianceRemarkNosqlStorage) MarshalText() ([]byte, error) {
+	switch s {
+	case GetNosqlApplianceRemarkNosqlStorageSSD:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *GetNosqlApplianceRemarkNosqlStorage) UnmarshalText(data []byte) error {
+	switch GetNosqlApplianceRemarkNosqlStorage(data) {
+	case GetNosqlApplianceRemarkNosqlStorageSSD:
+		*s = GetNosqlApplianceRemarkNosqlStorageSSD
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// 仮想コア.
+type GetNosqlApplianceRemarkNosqlVirtualcore int
+
+const (
+	GetNosqlApplianceRemarkNosqlVirtualcore3 GetNosqlApplianceRemarkNosqlVirtualcore = 3
+)
+
+// AllValues returns all GetNosqlApplianceRemarkNosqlVirtualcore values.
+func (GetNosqlApplianceRemarkNosqlVirtualcore) AllValues() []GetNosqlApplianceRemarkNosqlVirtualcore {
+	return []GetNosqlApplianceRemarkNosqlVirtualcore{
+		GetNosqlApplianceRemarkNosqlVirtualcore3,
+	}
+}
+
+type GetNosqlApplianceRemarkServersItem struct {
+	// ユーザ側スイッチに接続するIPアドレス
+	// ※ノード数分指定する.
+	UserIPAddress OptIPv4 `json:"UserIPAddress"`
+}
+
+// GetUserIPAddress returns the value of UserIPAddress.
+func (s *GetNosqlApplianceRemarkServersItem) GetUserIPAddress() OptIPv4 {
+	return s.UserIPAddress
+}
+
+// SetUserIPAddress sets the value of UserIPAddress.
+func (s *GetNosqlApplianceRemarkServersItem) SetUserIPAddress(val OptIPv4) {
+	s.UserIPAddress = val
+}
+
+// ゾーン.
+type GetNosqlApplianceRemarkZone struct {
+	// ゾーンID.
+	ID OptString `json:"ID"`
+}
+
+// GetID returns the value of ID.
+func (s *GetNosqlApplianceRemarkZone) GetID() OptString {
+	return s.ID
+}
+
+// SetID sets the value of ID.
+func (s *GetNosqlApplianceRemarkZone) SetID(val OptString) {
+	s.ID = val
+}
+
+// Ref: #/components/schemas/GetNosqlSettings
+type GetNosqlSettings struct {
+	// バックアップ情報.
+	Backup OptNilGetNosqlSettingsBackup `json:"Backup"`
+	// 送信元ネットワークアドレス.
+	SourceNetwork []string `json:"SourceNetwork"`
+	// 予備IPアドレス
+	// ※デッドノード発生時、ノード切替を行う際に使用する予備のIPアドレス.
+	ReserveIPAddress OptIPv4 `json:"ReserveIPAddress"`
+	// 定期リペア設定.
+	Repair OptNilGetNosqlSettingsRepair `json:"Repair"`
+}
+
+// GetBackup returns the value of Backup.
+func (s *GetNosqlSettings) GetBackup() OptNilGetNosqlSettingsBackup {
+	return s.Backup
+}
+
+// GetSourceNetwork returns the value of SourceNetwork.
+func (s *GetNosqlSettings) GetSourceNetwork() []string {
+	return s.SourceNetwork
+}
+
+// GetReserveIPAddress returns the value of ReserveIPAddress.
+func (s *GetNosqlSettings) GetReserveIPAddress() OptIPv4 {
+	return s.ReserveIPAddress
+}
+
+// GetRepair returns the value of Repair.
+func (s *GetNosqlSettings) GetRepair() OptNilGetNosqlSettingsRepair {
+	return s.Repair
+}
+
+// SetBackup sets the value of Backup.
+func (s *GetNosqlSettings) SetBackup(val OptNilGetNosqlSettingsBackup) {
+	s.Backup = val
+}
+
+// SetSourceNetwork sets the value of SourceNetwork.
+func (s *GetNosqlSettings) SetSourceNetwork(val []string) {
+	s.SourceNetwork = val
+}
+
+// SetReserveIPAddress sets the value of ReserveIPAddress.
+func (s *GetNosqlSettings) SetReserveIPAddress(val OptIPv4) {
+	s.ReserveIPAddress = val
+}
+
+// SetRepair sets the value of Repair.
+func (s *GetNosqlSettings) SetRepair(val OptNilGetNosqlSettingsRepair) {
+	s.Repair = val
+}
+
+// バックアップ情報.
+type GetNosqlSettingsBackup struct {
+	// バックアップ先（NFS URL形式）.
+	Connect OptString `json:"Connect"`
+	// バックアップスケジュール.
+	DayOfWeek OptNilGetNosqlSettingsBackupDayOfWeekItemArray `json:"DayOfWeek"`
+	// バックアップする時間.
+	Time OptNilString `json:"Time"`
+	// バックアップ数（1から8まで）.
+	Rotate OptInt `json:"Rotate"`
+}
+
+// GetConnect returns the value of Connect.
+func (s *GetNosqlSettingsBackup) GetConnect() OptString {
+	return s.Connect
+}
+
+// GetDayOfWeek returns the value of DayOfWeek.
+func (s *GetNosqlSettingsBackup) GetDayOfWeek() OptNilGetNosqlSettingsBackupDayOfWeekItemArray {
+	return s.DayOfWeek
+}
+
+// GetTime returns the value of Time.
+func (s *GetNosqlSettingsBackup) GetTime() OptNilString {
+	return s.Time
+}
+
+// GetRotate returns the value of Rotate.
+func (s *GetNosqlSettingsBackup) GetRotate() OptInt {
+	return s.Rotate
+}
+
+// SetConnect sets the value of Connect.
+func (s *GetNosqlSettingsBackup) SetConnect(val OptString) {
+	s.Connect = val
+}
+
+// SetDayOfWeek sets the value of DayOfWeek.
+func (s *GetNosqlSettingsBackup) SetDayOfWeek(val OptNilGetNosqlSettingsBackupDayOfWeekItemArray) {
+	s.DayOfWeek = val
+}
+
+// SetTime sets the value of Time.
+func (s *GetNosqlSettingsBackup) SetTime(val OptNilString) {
+	s.Time = val
+}
+
+// SetRotate sets the value of Rotate.
+func (s *GetNosqlSettingsBackup) SetRotate(val OptInt) {
+	s.Rotate = val
+}
+
+type GetNosqlSettingsBackupDayOfWeekItem string
+
+const (
+	GetNosqlSettingsBackupDayOfWeekItemSun GetNosqlSettingsBackupDayOfWeekItem = "sun"
+	GetNosqlSettingsBackupDayOfWeekItemMon GetNosqlSettingsBackupDayOfWeekItem = "mon"
+	GetNosqlSettingsBackupDayOfWeekItemTue GetNosqlSettingsBackupDayOfWeekItem = "tue"
+	GetNosqlSettingsBackupDayOfWeekItemWed GetNosqlSettingsBackupDayOfWeekItem = "wed"
+	GetNosqlSettingsBackupDayOfWeekItemThu GetNosqlSettingsBackupDayOfWeekItem = "thu"
+	GetNosqlSettingsBackupDayOfWeekItemFri GetNosqlSettingsBackupDayOfWeekItem = "fri"
+	GetNosqlSettingsBackupDayOfWeekItemSat GetNosqlSettingsBackupDayOfWeekItem = "sat"
+)
+
+// AllValues returns all GetNosqlSettingsBackupDayOfWeekItem values.
+func (GetNosqlSettingsBackupDayOfWeekItem) AllValues() []GetNosqlSettingsBackupDayOfWeekItem {
+	return []GetNosqlSettingsBackupDayOfWeekItem{
+		GetNosqlSettingsBackupDayOfWeekItemSun,
+		GetNosqlSettingsBackupDayOfWeekItemMon,
+		GetNosqlSettingsBackupDayOfWeekItemTue,
+		GetNosqlSettingsBackupDayOfWeekItemWed,
+		GetNosqlSettingsBackupDayOfWeekItemThu,
+		GetNosqlSettingsBackupDayOfWeekItemFri,
+		GetNosqlSettingsBackupDayOfWeekItemSat,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s GetNosqlSettingsBackupDayOfWeekItem) MarshalText() ([]byte, error) {
+	switch s {
+	case GetNosqlSettingsBackupDayOfWeekItemSun:
+		return []byte(s), nil
+	case GetNosqlSettingsBackupDayOfWeekItemMon:
+		return []byte(s), nil
+	case GetNosqlSettingsBackupDayOfWeekItemTue:
+		return []byte(s), nil
+	case GetNosqlSettingsBackupDayOfWeekItemWed:
+		return []byte(s), nil
+	case GetNosqlSettingsBackupDayOfWeekItemThu:
+		return []byte(s), nil
+	case GetNosqlSettingsBackupDayOfWeekItemFri:
+		return []byte(s), nil
+	case GetNosqlSettingsBackupDayOfWeekItemSat:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *GetNosqlSettingsBackupDayOfWeekItem) UnmarshalText(data []byte) error {
+	switch GetNosqlSettingsBackupDayOfWeekItem(data) {
+	case GetNosqlSettingsBackupDayOfWeekItemSun:
+		*s = GetNosqlSettingsBackupDayOfWeekItemSun
+		return nil
+	case GetNosqlSettingsBackupDayOfWeekItemMon:
+		*s = GetNosqlSettingsBackupDayOfWeekItemMon
+		return nil
+	case GetNosqlSettingsBackupDayOfWeekItemTue:
+		*s = GetNosqlSettingsBackupDayOfWeekItemTue
+		return nil
+	case GetNosqlSettingsBackupDayOfWeekItemWed:
+		*s = GetNosqlSettingsBackupDayOfWeekItemWed
+		return nil
+	case GetNosqlSettingsBackupDayOfWeekItemThu:
+		*s = GetNosqlSettingsBackupDayOfWeekItemThu
+		return nil
+	case GetNosqlSettingsBackupDayOfWeekItemFri:
+		*s = GetNosqlSettingsBackupDayOfWeekItemFri
+		return nil
+	case GetNosqlSettingsBackupDayOfWeekItemSat:
+		*s = GetNosqlSettingsBackupDayOfWeekItemSat
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// 定期リペア設定.
+type GetNosqlSettingsRepair struct {
+	// 増分リペア設定.
+	Incremental OptGetNosqlSettingsRepairIncremental `json:"Incremental"`
+	// 完全リペア設定.
+	Full OptGetNosqlSettingsRepairFull `json:"Full"`
+}
+
+// GetIncremental returns the value of Incremental.
+func (s *GetNosqlSettingsRepair) GetIncremental() OptGetNosqlSettingsRepairIncremental {
+	return s.Incremental
+}
+
+// GetFull returns the value of Full.
+func (s *GetNosqlSettingsRepair) GetFull() OptGetNosqlSettingsRepairFull {
+	return s.Full
+}
+
+// SetIncremental sets the value of Incremental.
+func (s *GetNosqlSettingsRepair) SetIncremental(val OptGetNosqlSettingsRepairIncremental) {
+	s.Incremental = val
+}
+
+// SetFull sets the value of Full.
+func (s *GetNosqlSettingsRepair) SetFull(val OptGetNosqlSettingsRepairFull) {
+	s.Full = val
+}
+
+// 完全リペア設定.
+type GetNosqlSettingsRepairFull struct {
+	// 7日ごとの実行間隔（日数）.
+	Interval OptGetNosqlSettingsRepairFullInterval `json:"Interval"`
+	// 実行曜日.
+	DayOfWeek OptGetNosqlSettingsRepairFullDayOfWeek `json:"DayOfWeek"`
+	// 実行時間.
+	Time OptString `json:"Time"`
+}
+
+// GetInterval returns the value of Interval.
+func (s *GetNosqlSettingsRepairFull) GetInterval() OptGetNosqlSettingsRepairFullInterval {
+	return s.Interval
+}
+
+// GetDayOfWeek returns the value of DayOfWeek.
+func (s *GetNosqlSettingsRepairFull) GetDayOfWeek() OptGetNosqlSettingsRepairFullDayOfWeek {
+	return s.DayOfWeek
+}
+
+// GetTime returns the value of Time.
+func (s *GetNosqlSettingsRepairFull) GetTime() OptString {
+	return s.Time
+}
+
+// SetInterval sets the value of Interval.
+func (s *GetNosqlSettingsRepairFull) SetInterval(val OptGetNosqlSettingsRepairFullInterval) {
+	s.Interval = val
+}
+
+// SetDayOfWeek sets the value of DayOfWeek.
+func (s *GetNosqlSettingsRepairFull) SetDayOfWeek(val OptGetNosqlSettingsRepairFullDayOfWeek) {
+	s.DayOfWeek = val
+}
+
+// SetTime sets the value of Time.
+func (s *GetNosqlSettingsRepairFull) SetTime(val OptString) {
+	s.Time = val
+}
+
+// 実行曜日.
+type GetNosqlSettingsRepairFullDayOfWeek string
+
+const (
+	GetNosqlSettingsRepairFullDayOfWeekSun GetNosqlSettingsRepairFullDayOfWeek = "sun"
+	GetNosqlSettingsRepairFullDayOfWeekMon GetNosqlSettingsRepairFullDayOfWeek = "mon"
+	GetNosqlSettingsRepairFullDayOfWeekTue GetNosqlSettingsRepairFullDayOfWeek = "tue"
+	GetNosqlSettingsRepairFullDayOfWeekWed GetNosqlSettingsRepairFullDayOfWeek = "wed"
+	GetNosqlSettingsRepairFullDayOfWeekThu GetNosqlSettingsRepairFullDayOfWeek = "thu"
+	GetNosqlSettingsRepairFullDayOfWeekFri GetNosqlSettingsRepairFullDayOfWeek = "fri"
+	GetNosqlSettingsRepairFullDayOfWeekSat GetNosqlSettingsRepairFullDayOfWeek = "sat"
+)
+
+// AllValues returns all GetNosqlSettingsRepairFullDayOfWeek values.
+func (GetNosqlSettingsRepairFullDayOfWeek) AllValues() []GetNosqlSettingsRepairFullDayOfWeek {
+	return []GetNosqlSettingsRepairFullDayOfWeek{
+		GetNosqlSettingsRepairFullDayOfWeekSun,
+		GetNosqlSettingsRepairFullDayOfWeekMon,
+		GetNosqlSettingsRepairFullDayOfWeekTue,
+		GetNosqlSettingsRepairFullDayOfWeekWed,
+		GetNosqlSettingsRepairFullDayOfWeekThu,
+		GetNosqlSettingsRepairFullDayOfWeekFri,
+		GetNosqlSettingsRepairFullDayOfWeekSat,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s GetNosqlSettingsRepairFullDayOfWeek) MarshalText() ([]byte, error) {
+	switch s {
+	case GetNosqlSettingsRepairFullDayOfWeekSun:
+		return []byte(s), nil
+	case GetNosqlSettingsRepairFullDayOfWeekMon:
+		return []byte(s), nil
+	case GetNosqlSettingsRepairFullDayOfWeekTue:
+		return []byte(s), nil
+	case GetNosqlSettingsRepairFullDayOfWeekWed:
+		return []byte(s), nil
+	case GetNosqlSettingsRepairFullDayOfWeekThu:
+		return []byte(s), nil
+	case GetNosqlSettingsRepairFullDayOfWeekFri:
+		return []byte(s), nil
+	case GetNosqlSettingsRepairFullDayOfWeekSat:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *GetNosqlSettingsRepairFullDayOfWeek) UnmarshalText(data []byte) error {
+	switch GetNosqlSettingsRepairFullDayOfWeek(data) {
+	case GetNosqlSettingsRepairFullDayOfWeekSun:
+		*s = GetNosqlSettingsRepairFullDayOfWeekSun
+		return nil
+	case GetNosqlSettingsRepairFullDayOfWeekMon:
+		*s = GetNosqlSettingsRepairFullDayOfWeekMon
+		return nil
+	case GetNosqlSettingsRepairFullDayOfWeekTue:
+		*s = GetNosqlSettingsRepairFullDayOfWeekTue
+		return nil
+	case GetNosqlSettingsRepairFullDayOfWeekWed:
+		*s = GetNosqlSettingsRepairFullDayOfWeekWed
+		return nil
+	case GetNosqlSettingsRepairFullDayOfWeekThu:
+		*s = GetNosqlSettingsRepairFullDayOfWeekThu
+		return nil
+	case GetNosqlSettingsRepairFullDayOfWeekFri:
+		*s = GetNosqlSettingsRepairFullDayOfWeekFri
+		return nil
+	case GetNosqlSettingsRepairFullDayOfWeekSat:
+		*s = GetNosqlSettingsRepairFullDayOfWeekSat
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// 7日ごとの実行間隔（日数）.
+type GetNosqlSettingsRepairFullInterval int
+
+const (
+	GetNosqlSettingsRepairFullInterval7  GetNosqlSettingsRepairFullInterval = 7
+	GetNosqlSettingsRepairFullInterval14 GetNosqlSettingsRepairFullInterval = 14
+	GetNosqlSettingsRepairFullInterval21 GetNosqlSettingsRepairFullInterval = 21
+	GetNosqlSettingsRepairFullInterval28 GetNosqlSettingsRepairFullInterval = 28
+)
+
+// AllValues returns all GetNosqlSettingsRepairFullInterval values.
+func (GetNosqlSettingsRepairFullInterval) AllValues() []GetNosqlSettingsRepairFullInterval {
+	return []GetNosqlSettingsRepairFullInterval{
+		GetNosqlSettingsRepairFullInterval7,
+		GetNosqlSettingsRepairFullInterval14,
+		GetNosqlSettingsRepairFullInterval21,
+		GetNosqlSettingsRepairFullInterval28,
+	}
+}
+
+// 増分リペア設定.
+type GetNosqlSettingsRepairIncremental struct {
+	// 実行曜日.
+	DaysOfWeek []GetNosqlSettingsRepairIncrementalDaysOfWeekItem `json:"DaysOfWeek"`
+	// 実行時間.
+	Time OptString `json:"Time"`
+}
+
+// GetDaysOfWeek returns the value of DaysOfWeek.
+func (s *GetNosqlSettingsRepairIncremental) GetDaysOfWeek() []GetNosqlSettingsRepairIncrementalDaysOfWeekItem {
+	return s.DaysOfWeek
+}
+
+// GetTime returns the value of Time.
+func (s *GetNosqlSettingsRepairIncremental) GetTime() OptString {
+	return s.Time
+}
+
+// SetDaysOfWeek sets the value of DaysOfWeek.
+func (s *GetNosqlSettingsRepairIncremental) SetDaysOfWeek(val []GetNosqlSettingsRepairIncrementalDaysOfWeekItem) {
+	s.DaysOfWeek = val
+}
+
+// SetTime sets the value of Time.
+func (s *GetNosqlSettingsRepairIncremental) SetTime(val OptString) {
+	s.Time = val
+}
+
+type GetNosqlSettingsRepairIncrementalDaysOfWeekItem string
+
+const (
+	GetNosqlSettingsRepairIncrementalDaysOfWeekItemSun GetNosqlSettingsRepairIncrementalDaysOfWeekItem = "sun"
+	GetNosqlSettingsRepairIncrementalDaysOfWeekItemMon GetNosqlSettingsRepairIncrementalDaysOfWeekItem = "mon"
+	GetNosqlSettingsRepairIncrementalDaysOfWeekItemTue GetNosqlSettingsRepairIncrementalDaysOfWeekItem = "tue"
+	GetNosqlSettingsRepairIncrementalDaysOfWeekItemWed GetNosqlSettingsRepairIncrementalDaysOfWeekItem = "wed"
+	GetNosqlSettingsRepairIncrementalDaysOfWeekItemThu GetNosqlSettingsRepairIncrementalDaysOfWeekItem = "thu"
+	GetNosqlSettingsRepairIncrementalDaysOfWeekItemFri GetNosqlSettingsRepairIncrementalDaysOfWeekItem = "fri"
+	GetNosqlSettingsRepairIncrementalDaysOfWeekItemSat GetNosqlSettingsRepairIncrementalDaysOfWeekItem = "sat"
+)
+
+// AllValues returns all GetNosqlSettingsRepairIncrementalDaysOfWeekItem values.
+func (GetNosqlSettingsRepairIncrementalDaysOfWeekItem) AllValues() []GetNosqlSettingsRepairIncrementalDaysOfWeekItem {
+	return []GetNosqlSettingsRepairIncrementalDaysOfWeekItem{
+		GetNosqlSettingsRepairIncrementalDaysOfWeekItemSun,
+		GetNosqlSettingsRepairIncrementalDaysOfWeekItemMon,
+		GetNosqlSettingsRepairIncrementalDaysOfWeekItemTue,
+		GetNosqlSettingsRepairIncrementalDaysOfWeekItemWed,
+		GetNosqlSettingsRepairIncrementalDaysOfWeekItemThu,
+		GetNosqlSettingsRepairIncrementalDaysOfWeekItemFri,
+		GetNosqlSettingsRepairIncrementalDaysOfWeekItemSat,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s GetNosqlSettingsRepairIncrementalDaysOfWeekItem) MarshalText() ([]byte, error) {
+	switch s {
+	case GetNosqlSettingsRepairIncrementalDaysOfWeekItemSun:
+		return []byte(s), nil
+	case GetNosqlSettingsRepairIncrementalDaysOfWeekItemMon:
+		return []byte(s), nil
+	case GetNosqlSettingsRepairIncrementalDaysOfWeekItemTue:
+		return []byte(s), nil
+	case GetNosqlSettingsRepairIncrementalDaysOfWeekItemWed:
+		return []byte(s), nil
+	case GetNosqlSettingsRepairIncrementalDaysOfWeekItemThu:
+		return []byte(s), nil
+	case GetNosqlSettingsRepairIncrementalDaysOfWeekItemFri:
+		return []byte(s), nil
+	case GetNosqlSettingsRepairIncrementalDaysOfWeekItemSat:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *GetNosqlSettingsRepairIncrementalDaysOfWeekItem) UnmarshalText(data []byte) error {
+	switch GetNosqlSettingsRepairIncrementalDaysOfWeekItem(data) {
+	case GetNosqlSettingsRepairIncrementalDaysOfWeekItemSun:
+		*s = GetNosqlSettingsRepairIncrementalDaysOfWeekItemSun
+		return nil
+	case GetNosqlSettingsRepairIncrementalDaysOfWeekItemMon:
+		*s = GetNosqlSettingsRepairIncrementalDaysOfWeekItemMon
+		return nil
+	case GetNosqlSettingsRepairIncrementalDaysOfWeekItemTue:
+		*s = GetNosqlSettingsRepairIncrementalDaysOfWeekItemTue
+		return nil
+	case GetNosqlSettingsRepairIncrementalDaysOfWeekItemWed:
+		*s = GetNosqlSettingsRepairIncrementalDaysOfWeekItemWed
+		return nil
+	case GetNosqlSettingsRepairIncrementalDaysOfWeekItemThu:
+		*s = GetNosqlSettingsRepairIncrementalDaysOfWeekItemThu
+		return nil
+	case GetNosqlSettingsRepairIncrementalDaysOfWeekItemFri:
+		*s = GetNosqlSettingsRepairIncrementalDaysOfWeekItemFri
+		return nil
+	case GetNosqlSettingsRepairIncrementalDaysOfWeekItemSat:
+		*s = GetNosqlSettingsRepairIncrementalDaysOfWeekItemSat
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 // Ref: #/components/schemas/GetParameterResponse
 type GetParameterResponse struct {
@@ -202,10 +1547,29 @@ func (s *GetParameterResponseNosql) SetParameters(val []NosqlGetParameter) {
 	s.Parameters = val
 }
 
+// プラン.
+// Ref: #/components/schemas/GetPlan
+type GetPlan struct {
+	// プランID.
+	ID OptInt `json:"ID"`
+}
+
+// GetID returns the value of ID.
+func (s *GetPlan) GetID() OptInt {
+	return s.ID
+}
+
+// SetID sets the value of ID.
+func (s *GetPlan) SetID(val OptInt) {
+	s.ID = val
+}
+
+type GetServiceClass string
+
 // Ref: #/components/schemas/Instance
 type Instance struct {
 	Status          OptString           `json:"Status"`
-	StatusChangedAt OptDateTime         `json:"StatusChangedAt"`
+	StatusChangedAt OptNilDateTime      `json:"StatusChangedAt"`
 	Host            OptNilInstanceHost  `json:"Host"`
 	Hosts           []InstanceHostsItem `json:"Hosts"`
 }
@@ -216,7 +1580,7 @@ func (s *Instance) GetStatus() OptString {
 }
 
 // GetStatusChangedAt returns the value of StatusChangedAt.
-func (s *Instance) GetStatusChangedAt() OptDateTime {
+func (s *Instance) GetStatusChangedAt() OptNilDateTime {
 	return s.StatusChangedAt
 }
 
@@ -236,7 +1600,7 @@ func (s *Instance) SetStatus(val OptString) {
 }
 
 // SetStatusChangedAt sets the value of StatusChangedAt.
-func (s *Instance) SetStatusChangedAt(val OptDateTime) {
+func (s *Instance) SetStatusChangedAt(val OptNilDateTime) {
 	s.StatusChangedAt = val
 }
 
@@ -303,23 +1667,140 @@ func (s *InstanceHostsItem) SetInfoURL(val OptString) {
 type IsOk bool
 
 // Merged schema.
+// Ref: #/components/schemas/NodeHealth
+type NodeHealth struct {
+	Success OptSuccess         `json:"Success"`
+	IsOk    OptIsOk            `json:"is_ok"`
+	Nosql   OptNodeHealthNosql `json:"Nosql"`
+}
+
+// GetSuccess returns the value of Success.
+func (s *NodeHealth) GetSuccess() OptSuccess {
+	return s.Success
+}
+
+// GetIsOk returns the value of IsOk.
+func (s *NodeHealth) GetIsOk() OptIsOk {
+	return s.IsOk
+}
+
+// GetNosql returns the value of Nosql.
+func (s *NodeHealth) GetNosql() OptNodeHealthNosql {
+	return s.Nosql
+}
+
+// SetSuccess sets the value of Success.
+func (s *NodeHealth) SetSuccess(val OptSuccess) {
+	s.Success = val
+}
+
+// SetIsOk sets the value of IsOk.
+func (s *NodeHealth) SetIsOk(val OptIsOk) {
+	s.IsOk = val
+}
+
+// SetNosql sets the value of Nosql.
+func (s *NodeHealth) SetNosql(val OptNodeHealthNosql) {
+	s.Nosql = val
+}
+
+func (*NodeHealth) getNoSQLNodeHealthRes() {}
+
+type NodeHealthNosql struct {
+	// NoSQLの状態
+	// | 値        | 説明   |
+	// |-----------|--------|
+	// | healthy        | 起動(すべてのノードが起動している)   |
+	// | healthy-partial | 部分起動(1台のノードが停止している)  |
+	// | unhealthy       | 停止(2台以上のノードが停止している)   |.
+	Status OptNodeHealthNosqlStatus `json:"Status"`
+}
+
+// GetStatus returns the value of Status.
+func (s *NodeHealthNosql) GetStatus() OptNodeHealthNosqlStatus {
+	return s.Status
+}
+
+// SetStatus sets the value of Status.
+func (s *NodeHealthNosql) SetStatus(val OptNodeHealthNosqlStatus) {
+	s.Status = val
+}
+
+// NoSQLの状態
+// | 値        | 説明   |
+// |-----------|--------|
+// | healthy        | 起動(すべてのノードが起動している)   |
+// | healthy-partial | 部分起動(1台のノードが停止している)  |
+// | unhealthy       | 停止(2台以上のノードが停止している)   |.
+type NodeHealthNosqlStatus string
+
+const (
+	NodeHealthNosqlStatusHealthy        NodeHealthNosqlStatus = "healthy"
+	NodeHealthNosqlStatusHealthyPartial NodeHealthNosqlStatus = "healthy-partial"
+	NodeHealthNosqlStatusUnhealthy      NodeHealthNosqlStatus = "unhealthy"
+)
+
+// AllValues returns all NodeHealthNosqlStatus values.
+func (NodeHealthNosqlStatus) AllValues() []NodeHealthNosqlStatus {
+	return []NodeHealthNosqlStatus{
+		NodeHealthNosqlStatusHealthy,
+		NodeHealthNosqlStatusHealthyPartial,
+		NodeHealthNosqlStatusUnhealthy,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NodeHealthNosqlStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case NodeHealthNosqlStatusHealthy:
+		return []byte(s), nil
+	case NodeHealthNosqlStatusHealthyPartial:
+		return []byte(s), nil
+	case NodeHealthNosqlStatusUnhealthy:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NodeHealthNosqlStatus) UnmarshalText(data []byte) error {
+	switch NodeHealthNosqlStatus(data) {
+	case NodeHealthNosqlStatusHealthy:
+		*s = NodeHealthNosqlStatusHealthy
+		return nil
+	case NodeHealthNosqlStatusHealthyPartial:
+		*s = NodeHealthNosqlStatusHealthyPartial
+		return nil
+	case NodeHealthNosqlStatusUnhealthy:
+		*s = NodeHealthNosqlStatusUnhealthy
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Merged schema.
 // Ref: #/components/schemas/NosqlAppliance
 type NosqlAppliance struct {
-	// クラス.
+	// クラス
+	// **新規作成時・ノード追加時必須**.
 	Class OptString `json:"Class"`
-	// NoSQLの名前.
+	// NoSQLの名前
+	// **新規作成時・ノード追加時必須**.
 	Name OptString `json:"Name"`
 	// NoSQLの説明.
 	Description OptString  `json:"Description"`
 	Tags        OptNilTags `json:"Tags"`
 	// アプライアンスID.
-	ID           string                         `json:"ID"`
-	Plan         OptPlan                        `json:"Plan"`
-	Settings     OptNosqlSettings               `json:"Settings"`
-	SettingsHash OptString                      `json:"SettingsHash"`
-	Remark       OptNosqlApplianceRemark        `json:"Remark"`
-	Availability OptAvailability                `json:"Availability"`
-	Instance     OptInstance                    `json:"Instance"`
+	ID           OptString               `json:"ID"`
+	Plan         OptPlan                 `json:"Plan"`
+	Settings     OptNosqlSettings        `json:"Settings"`
+	SettingsHash OptString               `json:"SettingsHash"`
+	Remark       OptNosqlApplianceRemark `json:"Remark"`
+	Availability OptAvailability         `json:"Availability"`
+	Instance     OptInstance             `json:"Instance"`
+	// ディスク情報.
 	Disk         OptNilNosqlApplianceDisk       `json:"Disk"`
 	ServiceClass OptServiceClass                `json:"ServiceClass"`
 	Generation   OptInt                         `json:"Generation"`
@@ -348,7 +1829,7 @@ func (s *NosqlAppliance) GetTags() OptNilTags {
 }
 
 // GetID returns the value of ID.
-func (s *NosqlAppliance) GetID() string {
+func (s *NosqlAppliance) GetID() OptString {
 	return s.ID
 }
 
@@ -428,7 +1909,7 @@ func (s *NosqlAppliance) SetTags(val OptNilTags) {
 }
 
 // SetID sets the value of ID.
-func (s *NosqlAppliance) SetID(val string) {
+func (s *NosqlAppliance) SetID(val OptString) {
 	s.ID = val
 }
 
@@ -487,8 +1968,17 @@ func (s *NosqlAppliance) SetInterfaces(val []NosqlApplianceInterfacesItem) {
 	s.Interfaces = val
 }
 
+// ディスク情報.
 type NosqlApplianceDisk struct {
+	// 暗号化キー情報.
+	EncryptionKey OptNosqlApplianceDiskEncryptionKey `json:"EncryptionKey"`
+	// 暗号化アルゴリズム.
 	EncryptionAlgorithm OptString `json:"EncryptionAlgorithm"`
+}
+
+// GetEncryptionKey returns the value of EncryptionKey.
+func (s *NosqlApplianceDisk) GetEncryptionKey() OptNosqlApplianceDiskEncryptionKey {
+	return s.EncryptionKey
 }
 
 // GetEncryptionAlgorithm returns the value of EncryptionAlgorithm.
@@ -496,15 +1986,36 @@ func (s *NosqlApplianceDisk) GetEncryptionAlgorithm() OptString {
 	return s.EncryptionAlgorithm
 }
 
+// SetEncryptionKey sets the value of EncryptionKey.
+func (s *NosqlApplianceDisk) SetEncryptionKey(val OptNosqlApplianceDiskEncryptionKey) {
+	s.EncryptionKey = val
+}
+
 // SetEncryptionAlgorithm sets the value of EncryptionAlgorithm.
 func (s *NosqlApplianceDisk) SetEncryptionAlgorithm(val OptString) {
 	s.EncryptionAlgorithm = val
 }
 
+// 暗号化キー情報.
+type NosqlApplianceDiskEncryptionKey struct {
+	// KMSキーID.
+	KMSKeyID OptString `json:"KMSKeyID"`
+}
+
+// GetKMSKeyID returns the value of KMSKeyID.
+func (s *NosqlApplianceDiskEncryptionKey) GetKMSKeyID() OptString {
+	return s.KMSKeyID
+}
+
+// SetKMSKeyID sets the value of KMSKeyID.
+func (s *NosqlApplianceDiskEncryptionKey) SetKMSKeyID(val OptString) {
+	s.KMSKeyID = val
+}
+
 type NosqlApplianceInterfacesItem struct {
 	// IPアドレス.
 	IPAddress OptNilString `json:"IPAddress"`
-	// ユーザIPアドレス.
+	// ユーザ側スイッチに接続するIPアドレス.
 	UserIPAddress OptNilString `json:"UserIPAddress"`
 	// ホスト名.
 	HostName OptNilString `json:"HostName"`
@@ -562,8 +2073,8 @@ type NosqlApplianceInterfacesItemSwitch struct {
 	Scope OptString `json:"Scope"`
 	// サブネット情報.
 	Subnet OptNilNosqlApplianceInterfacesItemSwitchSubnet `json:"Subnet"`
-	// ユーザーサブネット情報.
-	UserSubnet OptNosqlApplianceInterfacesItemSwitchUserSubnet `json:"UserSubnet"`
+	// ユーザサブネット情報.
+	UserSubnet OptNilNosqlApplianceInterfacesItemSwitchUserSubnet `json:"UserSubnet"`
 }
 
 // GetID returns the value of ID.
@@ -587,7 +2098,7 @@ func (s *NosqlApplianceInterfacesItemSwitch) GetSubnet() OptNilNosqlApplianceInt
 }
 
 // GetUserSubnet returns the value of UserSubnet.
-func (s *NosqlApplianceInterfacesItemSwitch) GetUserSubnet() OptNosqlApplianceInterfacesItemSwitchUserSubnet {
+func (s *NosqlApplianceInterfacesItemSwitch) GetUserSubnet() OptNilNosqlApplianceInterfacesItemSwitchUserSubnet {
 	return s.UserSubnet
 }
 
@@ -612,7 +2123,7 @@ func (s *NosqlApplianceInterfacesItemSwitch) SetSubnet(val OptNilNosqlApplianceI
 }
 
 // SetUserSubnet sets the value of UserSubnet.
-func (s *NosqlApplianceInterfacesItemSwitch) SetUserSubnet(val OptNosqlApplianceInterfacesItemSwitchUserSubnet) {
+func (s *NosqlApplianceInterfacesItemSwitch) SetUserSubnet(val OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) {
 	s.UserSubnet = val
 }
 
@@ -681,7 +2192,7 @@ func (s *NosqlApplianceInterfacesItemSwitchSubnetInternet) SetBandWidthMbps(val 
 	s.BandWidthMbps = val
 }
 
-// ユーザーサブネット情報.
+// ユーザサブネット情報.
 type NosqlApplianceInterfacesItemSwitchUserSubnet struct {
 	// ゲートウェイのアドレス.
 	DefaultRoute OptNilString `json:"DefaultRoute"`
@@ -711,7 +2222,7 @@ func (s *NosqlApplianceInterfacesItemSwitchUserSubnet) SetNetworkMaskLen(val Opt
 
 // Merged schema.
 type NosqlApplianceRemark struct {
-	Nosql   OptNosqlApplianceRemarkNosql      `json:"Nosql"`
+	Nosql   NosqlApplianceRemarkNosql         `json:"Nosql"`
 	Servers []NosqlApplianceRemarkServersItem `json:"Servers"`
 	// ゾーン.
 	Zone OptNosqlApplianceRemarkZone `json:"Zone"`
@@ -720,7 +2231,7 @@ type NosqlApplianceRemark struct {
 }
 
 // GetNosql returns the value of Nosql.
-func (s *NosqlApplianceRemark) GetNosql() OptNosqlApplianceRemarkNosql {
+func (s *NosqlApplianceRemark) GetNosql() NosqlApplianceRemarkNosql {
 	return s.Nosql
 }
 
@@ -740,7 +2251,7 @@ func (s *NosqlApplianceRemark) GetServiceClass() OptString {
 }
 
 // SetNosql sets the value of Nosql.
-func (s *NosqlApplianceRemark) SetNosql(val OptNosqlApplianceRemarkNosql) {
+func (s *NosqlApplianceRemark) SetNosql(val NosqlApplianceRemarkNosql) {
 	s.Nosql = val
 }
 
@@ -760,50 +2271,70 @@ func (s *NosqlApplianceRemark) SetServiceClass(val OptString) {
 }
 
 type NosqlApplianceRemarkNosql struct {
-	// データベースに使用するエンジン.
-	DatabaseEngine NosqlApplianceRemarkNosqlDatabaseEngine `json:"DatabaseEngine"`
-	// データベースバージョン.
-	DatabaseVersion string `json:"DatabaseVersion"`
-	// デフォルトユーザー名.
-	DefaultUser string `json:"DefaultUser"`
-	// ディスクサイズ(MB).
-	DiskSize NosqlApplianceRemarkNosqlDiskSize `json:"DiskSize"`
-	// メモリ(MB).
-	Memory NosqlApplianceRemarkNosqlMemory `json:"Memory"`
-	// ノード数.
+	// プライマリノード情報。
+	// **ノード追加時必須**
+	// ノード追加を行う場合は、対象となる既存NoSQLのアプライアンス情報を設定してください。.
+	PrimaryNodes OptNosqlApplianceRemarkNosqlPrimaryNodes `json:"PrimaryNodes"`
+	// データベースに使用するエンジン
+	// **新規作成時必須**.
+	DatabaseEngine OptNosqlApplianceRemarkNosqlDatabaseEngine `json:"DatabaseEngine"`
+	// データベースバージョン
+	// **新規作成時必須**.
+	DatabaseVersion OptString `json:"DatabaseVersion"`
+	// デフォルトユーザ名
+	// **新規作成時必須**.
+	DefaultUser OptString `json:"DefaultUser"`
+	// ディスクサイズ(MB)
+	// **新規作成時必須**.
+	DiskSize OptNosqlApplianceRemarkNosqlDiskSize `json:"DiskSize"`
+	// メモリ(MB)
+	// **新規作成時必須**.
+	Memory OptNosqlApplianceRemarkNosqlMemory `json:"Memory"`
+	// ノード数
+	// **新規作成時・ノード追加時必須**
+	// 新規作成時は3、ノード追加時は2を指定してください。.
 	Nodes int `json:"Nodes"`
-	// ポート.
-	Port int `json:"Port"`
-	// ストレージ.
-	Storage NosqlApplianceRemarkNosqlStorage `json:"Storage"`
-	// 仮想コア.
-	Virtualcore NosqlApplianceRemarkNosqlVirtualcore `json:"Virtualcore"`
-	// ゾーン.
+	// ポート
+	// **新規作成時必須**.
+	Port OptInt `json:"Port"`
+	// ストレージ
+	// **新規作成時必須**.
+	Storage OptNosqlApplianceRemarkNosqlStorage `json:"Storage"`
+	// 仮想コア
+	// **新規作成時必須**.
+	Virtualcore OptNosqlApplianceRemarkNosqlVirtualcore `json:"Virtualcore"`
+	// ゾーン
+	// **新規作成時・ノード追加時必須**.
 	Zone string `json:"Zone"`
 }
 
+// GetPrimaryNodes returns the value of PrimaryNodes.
+func (s *NosqlApplianceRemarkNosql) GetPrimaryNodes() OptNosqlApplianceRemarkNosqlPrimaryNodes {
+	return s.PrimaryNodes
+}
+
 // GetDatabaseEngine returns the value of DatabaseEngine.
-func (s *NosqlApplianceRemarkNosql) GetDatabaseEngine() NosqlApplianceRemarkNosqlDatabaseEngine {
+func (s *NosqlApplianceRemarkNosql) GetDatabaseEngine() OptNosqlApplianceRemarkNosqlDatabaseEngine {
 	return s.DatabaseEngine
 }
 
 // GetDatabaseVersion returns the value of DatabaseVersion.
-func (s *NosqlApplianceRemarkNosql) GetDatabaseVersion() string {
+func (s *NosqlApplianceRemarkNosql) GetDatabaseVersion() OptString {
 	return s.DatabaseVersion
 }
 
 // GetDefaultUser returns the value of DefaultUser.
-func (s *NosqlApplianceRemarkNosql) GetDefaultUser() string {
+func (s *NosqlApplianceRemarkNosql) GetDefaultUser() OptString {
 	return s.DefaultUser
 }
 
 // GetDiskSize returns the value of DiskSize.
-func (s *NosqlApplianceRemarkNosql) GetDiskSize() NosqlApplianceRemarkNosqlDiskSize {
+func (s *NosqlApplianceRemarkNosql) GetDiskSize() OptNosqlApplianceRemarkNosqlDiskSize {
 	return s.DiskSize
 }
 
 // GetMemory returns the value of Memory.
-func (s *NosqlApplianceRemarkNosql) GetMemory() NosqlApplianceRemarkNosqlMemory {
+func (s *NosqlApplianceRemarkNosql) GetMemory() OptNosqlApplianceRemarkNosqlMemory {
 	return s.Memory
 }
 
@@ -813,17 +2344,17 @@ func (s *NosqlApplianceRemarkNosql) GetNodes() int {
 }
 
 // GetPort returns the value of Port.
-func (s *NosqlApplianceRemarkNosql) GetPort() int {
+func (s *NosqlApplianceRemarkNosql) GetPort() OptInt {
 	return s.Port
 }
 
 // GetStorage returns the value of Storage.
-func (s *NosqlApplianceRemarkNosql) GetStorage() NosqlApplianceRemarkNosqlStorage {
+func (s *NosqlApplianceRemarkNosql) GetStorage() OptNosqlApplianceRemarkNosqlStorage {
 	return s.Storage
 }
 
 // GetVirtualcore returns the value of Virtualcore.
-func (s *NosqlApplianceRemarkNosql) GetVirtualcore() NosqlApplianceRemarkNosqlVirtualcore {
+func (s *NosqlApplianceRemarkNosql) GetVirtualcore() OptNosqlApplianceRemarkNosqlVirtualcore {
 	return s.Virtualcore
 }
 
@@ -832,28 +2363,33 @@ func (s *NosqlApplianceRemarkNosql) GetZone() string {
 	return s.Zone
 }
 
+// SetPrimaryNodes sets the value of PrimaryNodes.
+func (s *NosqlApplianceRemarkNosql) SetPrimaryNodes(val OptNosqlApplianceRemarkNosqlPrimaryNodes) {
+	s.PrimaryNodes = val
+}
+
 // SetDatabaseEngine sets the value of DatabaseEngine.
-func (s *NosqlApplianceRemarkNosql) SetDatabaseEngine(val NosqlApplianceRemarkNosqlDatabaseEngine) {
+func (s *NosqlApplianceRemarkNosql) SetDatabaseEngine(val OptNosqlApplianceRemarkNosqlDatabaseEngine) {
 	s.DatabaseEngine = val
 }
 
 // SetDatabaseVersion sets the value of DatabaseVersion.
-func (s *NosqlApplianceRemarkNosql) SetDatabaseVersion(val string) {
+func (s *NosqlApplianceRemarkNosql) SetDatabaseVersion(val OptString) {
 	s.DatabaseVersion = val
 }
 
 // SetDefaultUser sets the value of DefaultUser.
-func (s *NosqlApplianceRemarkNosql) SetDefaultUser(val string) {
+func (s *NosqlApplianceRemarkNosql) SetDefaultUser(val OptString) {
 	s.DefaultUser = val
 }
 
 // SetDiskSize sets the value of DiskSize.
-func (s *NosqlApplianceRemarkNosql) SetDiskSize(val NosqlApplianceRemarkNosqlDiskSize) {
+func (s *NosqlApplianceRemarkNosql) SetDiskSize(val OptNosqlApplianceRemarkNosqlDiskSize) {
 	s.DiskSize = val
 }
 
 // SetMemory sets the value of Memory.
-func (s *NosqlApplianceRemarkNosql) SetMemory(val NosqlApplianceRemarkNosqlMemory) {
+func (s *NosqlApplianceRemarkNosql) SetMemory(val OptNosqlApplianceRemarkNosqlMemory) {
 	s.Memory = val
 }
 
@@ -863,17 +2399,17 @@ func (s *NosqlApplianceRemarkNosql) SetNodes(val int) {
 }
 
 // SetPort sets the value of Port.
-func (s *NosqlApplianceRemarkNosql) SetPort(val int) {
+func (s *NosqlApplianceRemarkNosql) SetPort(val OptInt) {
 	s.Port = val
 }
 
 // SetStorage sets the value of Storage.
-func (s *NosqlApplianceRemarkNosql) SetStorage(val NosqlApplianceRemarkNosqlStorage) {
+func (s *NosqlApplianceRemarkNosql) SetStorage(val OptNosqlApplianceRemarkNosqlStorage) {
 	s.Storage = val
 }
 
 // SetVirtualcore sets the value of Virtualcore.
-func (s *NosqlApplianceRemarkNosql) SetVirtualcore(val NosqlApplianceRemarkNosqlVirtualcore) {
+func (s *NosqlApplianceRemarkNosql) SetVirtualcore(val OptNosqlApplianceRemarkNosqlVirtualcore) {
 	s.Virtualcore = val
 }
 
@@ -882,7 +2418,8 @@ func (s *NosqlApplianceRemarkNosql) SetZone(val string) {
 	s.Zone = val
 }
 
-// データベースに使用するエンジン.
+// データベースに使用するエンジン
+// **新規作成時必須**.
 type NosqlApplianceRemarkNosqlDatabaseEngine string
 
 const (
@@ -917,7 +2454,8 @@ func (s *NosqlApplianceRemarkNosqlDatabaseEngine) UnmarshalText(data []byte) err
 	}
 }
 
-// ディスクサイズ(MB).
+// ディスクサイズ(MB)
+// **新規作成時必須**.
 type NosqlApplianceRemarkNosqlDiskSize int
 
 const (
@@ -931,7 +2469,8 @@ func (NosqlApplianceRemarkNosqlDiskSize) AllValues() []NosqlApplianceRemarkNosql
 	}
 }
 
-// メモリ(MB).
+// メモリ(MB)
+// **新規作成時必須**.
 type NosqlApplianceRemarkNosqlMemory int
 
 const (
@@ -945,7 +2484,76 @@ func (NosqlApplianceRemarkNosqlMemory) AllValues() []NosqlApplianceRemarkNosqlMe
 	}
 }
 
-// ストレージ.
+// プライマリノード情報。
+// **ノード追加時必須**
+// ノード追加を行う場合は、対象となる既存NoSQLのアプライアンス情報を設定してください。.
+type NosqlApplianceRemarkNosqlPrimaryNodes struct {
+	// 既存のNoSQLのアプライアンス情報
+	// **ノード追加時必須**.
+	Appliance NosqlApplianceRemarkNosqlPrimaryNodesAppliance `json:"Appliance"`
+}
+
+// GetAppliance returns the value of Appliance.
+func (s *NosqlApplianceRemarkNosqlPrimaryNodes) GetAppliance() NosqlApplianceRemarkNosqlPrimaryNodesAppliance {
+	return s.Appliance
+}
+
+// SetAppliance sets the value of Appliance.
+func (s *NosqlApplianceRemarkNosqlPrimaryNodes) SetAppliance(val NosqlApplianceRemarkNosqlPrimaryNodesAppliance) {
+	s.Appliance = val
+}
+
+// 既存のNoSQLのアプライアンス情報
+// **ノード追加時必須**.
+type NosqlApplianceRemarkNosqlPrimaryNodesAppliance struct {
+	// 既存のNoSQLのアプライアンスID
+	// **ノード追加時必須**.
+	ID string `json:"ID"`
+	// 既存のNoSQLのゾーン
+	// **ノード追加時必須**.
+	Zone NosqlApplianceRemarkNosqlPrimaryNodesApplianceZone `json:"Zone"`
+}
+
+// GetID returns the value of ID.
+func (s *NosqlApplianceRemarkNosqlPrimaryNodesAppliance) GetID() string {
+	return s.ID
+}
+
+// GetZone returns the value of Zone.
+func (s *NosqlApplianceRemarkNosqlPrimaryNodesAppliance) GetZone() NosqlApplianceRemarkNosqlPrimaryNodesApplianceZone {
+	return s.Zone
+}
+
+// SetID sets the value of ID.
+func (s *NosqlApplianceRemarkNosqlPrimaryNodesAppliance) SetID(val string) {
+	s.ID = val
+}
+
+// SetZone sets the value of Zone.
+func (s *NosqlApplianceRemarkNosqlPrimaryNodesAppliance) SetZone(val NosqlApplianceRemarkNosqlPrimaryNodesApplianceZone) {
+	s.Zone = val
+}
+
+// 既存のNoSQLのゾーン
+// **ノード追加時必須**.
+type NosqlApplianceRemarkNosqlPrimaryNodesApplianceZone struct {
+	// 既存のNoSQLのゾーン情報
+	// **ノード追加時必須**.
+	Name string `json:"Name"`
+}
+
+// GetName returns the value of Name.
+func (s *NosqlApplianceRemarkNosqlPrimaryNodesApplianceZone) GetName() string {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *NosqlApplianceRemarkNosqlPrimaryNodesApplianceZone) SetName(val string) {
+	s.Name = val
+}
+
+// ストレージ
+// **新規作成時必須**.
 type NosqlApplianceRemarkNosqlStorage string
 
 const (
@@ -980,7 +2588,8 @@ func (s *NosqlApplianceRemarkNosqlStorage) UnmarshalText(data []byte) error {
 	}
 }
 
-// 仮想コア.
+// 仮想コア
+// **新規作成時必須**.
 type NosqlApplianceRemarkNosqlVirtualcore int
 
 const (
@@ -995,8 +2604,9 @@ func (NosqlApplianceRemarkNosqlVirtualcore) AllValues() []NosqlApplianceRemarkNo
 }
 
 type NosqlApplianceRemarkServersItem struct {
-	// ユーザIPアドレス
-	// ※Node数分指定する.
+	// ユーザ側スイッチに接続するIPアドレス
+	// **新規作成時・ノード追加時必須**
+	// ※ノード数分指定する.
 	UserIPAddress netip.Addr `json:"UserIPAddress"`
 }
 
@@ -1174,22 +2784,28 @@ func (s *NosqlCreateRequest) SetAppliance(val NosqlCreateRequestAppliance) {
 
 // Merged schema.
 type NosqlCreateRequestAppliance struct {
-	// クラス.
-	Class OptString `json:"Class"`
-	// NoSQLの名前.
+	// クラス
+	// **新規作成時・ノード追加時必須**.
+	Class string `json:"Class"`
+	// NoSQLの名前
+	// **新規作成時・ノード追加時必須**.
 	Name string `json:"Name"`
 	// NoSQLの説明.
-	Description    OptString                                       `json:"Description"`
-	Tags           OptNilTags                                      `json:"Tags"`
-	ServiceClass   OptServiceClass                                 `json:"ServiceClass"`
-	Plan           OptPlan                                         `json:"Plan"`
-	Settings       NosqlCreateRequestApplianceSettings             `json:"Settings"`
+	Description  OptString    `json:"Description"`
+	Tags         OptNilTags   `json:"Tags"`
+	ServiceClass ServiceClass `json:"ServiceClass"`
+	Plan         Plan         `json:"Plan"`
+	// ディスク情報
+	// ディスクの情報は暗号化する場合は EncryptionAlgorithm と EncryptionKey
+	// を指定する必要があります。.
+	Disk           OptNilNosqlCreateRequestApplianceDisk           `json:"Disk"`
+	Settings       OptNosqlCreateRequestApplianceSettings          `json:"Settings"`
 	Remark         NosqlRemark                                     `json:"Remark"`
 	UserInterfaces []NosqlCreateRequestApplianceUserInterfacesItem `json:"UserInterfaces"`
 }
 
 // GetClass returns the value of Class.
-func (s *NosqlCreateRequestAppliance) GetClass() OptString {
+func (s *NosqlCreateRequestAppliance) GetClass() string {
 	return s.Class
 }
 
@@ -1209,17 +2825,22 @@ func (s *NosqlCreateRequestAppliance) GetTags() OptNilTags {
 }
 
 // GetServiceClass returns the value of ServiceClass.
-func (s *NosqlCreateRequestAppliance) GetServiceClass() OptServiceClass {
+func (s *NosqlCreateRequestAppliance) GetServiceClass() ServiceClass {
 	return s.ServiceClass
 }
 
 // GetPlan returns the value of Plan.
-func (s *NosqlCreateRequestAppliance) GetPlan() OptPlan {
+func (s *NosqlCreateRequestAppliance) GetPlan() Plan {
 	return s.Plan
 }
 
+// GetDisk returns the value of Disk.
+func (s *NosqlCreateRequestAppliance) GetDisk() OptNilNosqlCreateRequestApplianceDisk {
+	return s.Disk
+}
+
 // GetSettings returns the value of Settings.
-func (s *NosqlCreateRequestAppliance) GetSettings() NosqlCreateRequestApplianceSettings {
+func (s *NosqlCreateRequestAppliance) GetSettings() OptNosqlCreateRequestApplianceSettings {
 	return s.Settings
 }
 
@@ -1234,7 +2855,7 @@ func (s *NosqlCreateRequestAppliance) GetUserInterfaces() []NosqlCreateRequestAp
 }
 
 // SetClass sets the value of Class.
-func (s *NosqlCreateRequestAppliance) SetClass(val OptString) {
+func (s *NosqlCreateRequestAppliance) SetClass(val string) {
 	s.Class = val
 }
 
@@ -1254,17 +2875,22 @@ func (s *NosqlCreateRequestAppliance) SetTags(val OptNilTags) {
 }
 
 // SetServiceClass sets the value of ServiceClass.
-func (s *NosqlCreateRequestAppliance) SetServiceClass(val OptServiceClass) {
+func (s *NosqlCreateRequestAppliance) SetServiceClass(val ServiceClass) {
 	s.ServiceClass = val
 }
 
 // SetPlan sets the value of Plan.
-func (s *NosqlCreateRequestAppliance) SetPlan(val OptPlan) {
+func (s *NosqlCreateRequestAppliance) SetPlan(val Plan) {
 	s.Plan = val
 }
 
+// SetDisk sets the value of Disk.
+func (s *NosqlCreateRequestAppliance) SetDisk(val OptNilNosqlCreateRequestApplianceDisk) {
+	s.Disk = val
+}
+
 // SetSettings sets the value of Settings.
-func (s *NosqlCreateRequestAppliance) SetSettings(val NosqlCreateRequestApplianceSettings) {
+func (s *NosqlCreateRequestAppliance) SetSettings(val OptNosqlCreateRequestApplianceSettings) {
 	s.Settings = val
 }
 
@@ -1278,15 +2904,63 @@ func (s *NosqlCreateRequestAppliance) SetUserInterfaces(val []NosqlCreateRequest
 	s.UserInterfaces = val
 }
 
+// ディスク情報
+// ディスクの情報は暗号化する場合は EncryptionAlgorithm と EncryptionKey
+// を指定する必要があります。.
+type NosqlCreateRequestApplianceDisk struct {
+	// 暗号化キー情報.
+	EncryptionKey OptNosqlCreateRequestApplianceDiskEncryptionKey `json:"EncryptionKey"`
+	// 暗号化アルゴリズム.
+	EncryptionAlgorithm OptString `json:"EncryptionAlgorithm"`
+}
+
+// GetEncryptionKey returns the value of EncryptionKey.
+func (s *NosqlCreateRequestApplianceDisk) GetEncryptionKey() OptNosqlCreateRequestApplianceDiskEncryptionKey {
+	return s.EncryptionKey
+}
+
+// GetEncryptionAlgorithm returns the value of EncryptionAlgorithm.
+func (s *NosqlCreateRequestApplianceDisk) GetEncryptionAlgorithm() OptString {
+	return s.EncryptionAlgorithm
+}
+
+// SetEncryptionKey sets the value of EncryptionKey.
+func (s *NosqlCreateRequestApplianceDisk) SetEncryptionKey(val OptNosqlCreateRequestApplianceDiskEncryptionKey) {
+	s.EncryptionKey = val
+}
+
+// SetEncryptionAlgorithm sets the value of EncryptionAlgorithm.
+func (s *NosqlCreateRequestApplianceDisk) SetEncryptionAlgorithm(val OptString) {
+	s.EncryptionAlgorithm = val
+}
+
+// 暗号化キー情報.
+type NosqlCreateRequestApplianceDiskEncryptionKey struct {
+	// KMSキーID.
+	KMSKeyID OptString `json:"KMSKeyID"`
+}
+
+// GetKMSKeyID returns the value of KMSKeyID.
+func (s *NosqlCreateRequestApplianceDiskEncryptionKey) GetKMSKeyID() OptString {
+	return s.KMSKeyID
+}
+
+// SetKMSKeyID sets the value of KMSKeyID.
+func (s *NosqlCreateRequestApplianceDiskEncryptionKey) SetKMSKeyID(val OptString) {
+	s.KMSKeyID = val
+}
+
 // Merged schema.
 type NosqlCreateRequestApplianceSettings struct {
 	// バックアップ情報.
 	Backup OptNilNosqlCreateRequestApplianceSettingsBackup `json:"Backup"`
 	// 送信元ネットワークアドレス.
 	SourceNetwork []string `json:"SourceNetwork"`
-	Password      Password `json:"Password"`
-	// 予約IPアドレス.
-	ReserveIPAddress netip.Addr `json:"ReserveIPAddress"`
+	// Merged property.
+	ReserveIPAddress OptIPv4 `json:"ReserveIPAddress"`
+	// 定期リペア設定.
+	Repair   OptNilNosqlCreateRequestApplianceSettingsRepair `json:"Repair"`
+	Password OptPassword                                     `json:"Password"`
 }
 
 // GetBackup returns the value of Backup.
@@ -1299,14 +2973,19 @@ func (s *NosqlCreateRequestApplianceSettings) GetSourceNetwork() []string {
 	return s.SourceNetwork
 }
 
-// GetPassword returns the value of Password.
-func (s *NosqlCreateRequestApplianceSettings) GetPassword() Password {
-	return s.Password
+// GetReserveIPAddress returns the value of ReserveIPAddress.
+func (s *NosqlCreateRequestApplianceSettings) GetReserveIPAddress() OptIPv4 {
+	return s.ReserveIPAddress
 }
 
-// GetReserveIPAddress returns the value of ReserveIPAddress.
-func (s *NosqlCreateRequestApplianceSettings) GetReserveIPAddress() netip.Addr {
-	return s.ReserveIPAddress
+// GetRepair returns the value of Repair.
+func (s *NosqlCreateRequestApplianceSettings) GetRepair() OptNilNosqlCreateRequestApplianceSettingsRepair {
+	return s.Repair
+}
+
+// GetPassword returns the value of Password.
+func (s *NosqlCreateRequestApplianceSettings) GetPassword() OptPassword {
+	return s.Password
 }
 
 // SetBackup sets the value of Backup.
@@ -1319,14 +2998,19 @@ func (s *NosqlCreateRequestApplianceSettings) SetSourceNetwork(val []string) {
 	s.SourceNetwork = val
 }
 
-// SetPassword sets the value of Password.
-func (s *NosqlCreateRequestApplianceSettings) SetPassword(val Password) {
-	s.Password = val
+// SetReserveIPAddress sets the value of ReserveIPAddress.
+func (s *NosqlCreateRequestApplianceSettings) SetReserveIPAddress(val OptIPv4) {
+	s.ReserveIPAddress = val
 }
 
-// SetReserveIPAddress sets the value of ReserveIPAddress.
-func (s *NosqlCreateRequestApplianceSettings) SetReserveIPAddress(val netip.Addr) {
-	s.ReserveIPAddress = val
+// SetRepair sets the value of Repair.
+func (s *NosqlCreateRequestApplianceSettings) SetRepair(val OptNilNosqlCreateRequestApplianceSettingsRepair) {
+	s.Repair = val
+}
+
+// SetPassword sets the value of Password.
+func (s *NosqlCreateRequestApplianceSettings) SetPassword(val OptPassword) {
+	s.Password = val
 }
 
 // バックアップ情報.
@@ -1457,14 +3141,286 @@ func (s *NosqlCreateRequestApplianceSettingsBackupDayOfWeekItem) UnmarshalText(d
 	}
 }
 
+// 定期リペア設定.
+type NosqlCreateRequestApplianceSettingsRepair struct {
+	// 増分リペア設定.
+	Incremental OptNosqlCreateRequestApplianceSettingsRepairIncremental `json:"Incremental"`
+	// 完全リペア設定.
+	Full OptNosqlCreateRequestApplianceSettingsRepairFull `json:"Full"`
+}
+
+// GetIncremental returns the value of Incremental.
+func (s *NosqlCreateRequestApplianceSettingsRepair) GetIncremental() OptNosqlCreateRequestApplianceSettingsRepairIncremental {
+	return s.Incremental
+}
+
+// GetFull returns the value of Full.
+func (s *NosqlCreateRequestApplianceSettingsRepair) GetFull() OptNosqlCreateRequestApplianceSettingsRepairFull {
+	return s.Full
+}
+
+// SetIncremental sets the value of Incremental.
+func (s *NosqlCreateRequestApplianceSettingsRepair) SetIncremental(val OptNosqlCreateRequestApplianceSettingsRepairIncremental) {
+	s.Incremental = val
+}
+
+// SetFull sets the value of Full.
+func (s *NosqlCreateRequestApplianceSettingsRepair) SetFull(val OptNosqlCreateRequestApplianceSettingsRepairFull) {
+	s.Full = val
+}
+
+// 完全リペア設定.
+type NosqlCreateRequestApplianceSettingsRepairFull struct {
+	// 7日ごとの実行間隔（日数）.
+	Interval NosqlCreateRequestApplianceSettingsRepairFullInterval `json:"Interval"`
+	// 実行曜日.
+	DayOfWeek NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek `json:"DayOfWeek"`
+	// 実行時間.
+	Time string `json:"Time"`
+}
+
+// GetInterval returns the value of Interval.
+func (s *NosqlCreateRequestApplianceSettingsRepairFull) GetInterval() NosqlCreateRequestApplianceSettingsRepairFullInterval {
+	return s.Interval
+}
+
+// GetDayOfWeek returns the value of DayOfWeek.
+func (s *NosqlCreateRequestApplianceSettingsRepairFull) GetDayOfWeek() NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek {
+	return s.DayOfWeek
+}
+
+// GetTime returns the value of Time.
+func (s *NosqlCreateRequestApplianceSettingsRepairFull) GetTime() string {
+	return s.Time
+}
+
+// SetInterval sets the value of Interval.
+func (s *NosqlCreateRequestApplianceSettingsRepairFull) SetInterval(val NosqlCreateRequestApplianceSettingsRepairFullInterval) {
+	s.Interval = val
+}
+
+// SetDayOfWeek sets the value of DayOfWeek.
+func (s *NosqlCreateRequestApplianceSettingsRepairFull) SetDayOfWeek(val NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek) {
+	s.DayOfWeek = val
+}
+
+// SetTime sets the value of Time.
+func (s *NosqlCreateRequestApplianceSettingsRepairFull) SetTime(val string) {
+	s.Time = val
+}
+
+// 実行曜日.
+type NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek string
+
+const (
+	NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekSun NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek = "sun"
+	NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekMon NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek = "mon"
+	NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekTue NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek = "tue"
+	NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekWed NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek = "wed"
+	NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekThu NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek = "thu"
+	NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekFri NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek = "fri"
+	NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekSat NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek = "sat"
+)
+
+// AllValues returns all NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek values.
+func (NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek) AllValues() []NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek {
+	return []NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek{
+		NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekSun,
+		NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekMon,
+		NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekTue,
+		NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekWed,
+		NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekThu,
+		NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekFri,
+		NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekSat,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek) MarshalText() ([]byte, error) {
+	switch s {
+	case NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekSun:
+		return []byte(s), nil
+	case NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekMon:
+		return []byte(s), nil
+	case NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekTue:
+		return []byte(s), nil
+	case NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekWed:
+		return []byte(s), nil
+	case NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekThu:
+		return []byte(s), nil
+	case NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekFri:
+		return []byte(s), nil
+	case NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekSat:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek) UnmarshalText(data []byte) error {
+	switch NosqlCreateRequestApplianceSettingsRepairFullDayOfWeek(data) {
+	case NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekSun:
+		*s = NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekSun
+		return nil
+	case NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekMon:
+		*s = NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekMon
+		return nil
+	case NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekTue:
+		*s = NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekTue
+		return nil
+	case NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekWed:
+		*s = NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekWed
+		return nil
+	case NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekThu:
+		*s = NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekThu
+		return nil
+	case NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekFri:
+		*s = NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekFri
+		return nil
+	case NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekSat:
+		*s = NosqlCreateRequestApplianceSettingsRepairFullDayOfWeekSat
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// 7日ごとの実行間隔（日数）.
+type NosqlCreateRequestApplianceSettingsRepairFullInterval int
+
+const (
+	NosqlCreateRequestApplianceSettingsRepairFullInterval7  NosqlCreateRequestApplianceSettingsRepairFullInterval = 7
+	NosqlCreateRequestApplianceSettingsRepairFullInterval14 NosqlCreateRequestApplianceSettingsRepairFullInterval = 14
+	NosqlCreateRequestApplianceSettingsRepairFullInterval21 NosqlCreateRequestApplianceSettingsRepairFullInterval = 21
+	NosqlCreateRequestApplianceSettingsRepairFullInterval28 NosqlCreateRequestApplianceSettingsRepairFullInterval = 28
+)
+
+// AllValues returns all NosqlCreateRequestApplianceSettingsRepairFullInterval values.
+func (NosqlCreateRequestApplianceSettingsRepairFullInterval) AllValues() []NosqlCreateRequestApplianceSettingsRepairFullInterval {
+	return []NosqlCreateRequestApplianceSettingsRepairFullInterval{
+		NosqlCreateRequestApplianceSettingsRepairFullInterval7,
+		NosqlCreateRequestApplianceSettingsRepairFullInterval14,
+		NosqlCreateRequestApplianceSettingsRepairFullInterval21,
+		NosqlCreateRequestApplianceSettingsRepairFullInterval28,
+	}
+}
+
+// 増分リペア設定.
+type NosqlCreateRequestApplianceSettingsRepairIncremental struct {
+	// 実行曜日.
+	DaysOfWeek []NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem `json:"DaysOfWeek"`
+	// 実行時間.
+	Time string `json:"Time"`
+}
+
+// GetDaysOfWeek returns the value of DaysOfWeek.
+func (s *NosqlCreateRequestApplianceSettingsRepairIncremental) GetDaysOfWeek() []NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem {
+	return s.DaysOfWeek
+}
+
+// GetTime returns the value of Time.
+func (s *NosqlCreateRequestApplianceSettingsRepairIncremental) GetTime() string {
+	return s.Time
+}
+
+// SetDaysOfWeek sets the value of DaysOfWeek.
+func (s *NosqlCreateRequestApplianceSettingsRepairIncremental) SetDaysOfWeek(val []NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem) {
+	s.DaysOfWeek = val
+}
+
+// SetTime sets the value of Time.
+func (s *NosqlCreateRequestApplianceSettingsRepairIncremental) SetTime(val string) {
+	s.Time = val
+}
+
+type NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem string
+
+const (
+	NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSun NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem = "sun"
+	NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemMon NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem = "mon"
+	NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemTue NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem = "tue"
+	NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemWed NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem = "wed"
+	NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemThu NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem = "thu"
+	NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemFri NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem = "fri"
+	NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSat NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem = "sat"
+)
+
+// AllValues returns all NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem values.
+func (NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem) AllValues() []NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem {
+	return []NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem{
+		NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSun,
+		NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemMon,
+		NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemTue,
+		NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemWed,
+		NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemThu,
+		NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemFri,
+		NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSat,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem) MarshalText() ([]byte, error) {
+	switch s {
+	case NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSun:
+		return []byte(s), nil
+	case NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemMon:
+		return []byte(s), nil
+	case NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemTue:
+		return []byte(s), nil
+	case NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemWed:
+		return []byte(s), nil
+	case NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemThu:
+		return []byte(s), nil
+	case NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemFri:
+		return []byte(s), nil
+	case NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSat:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem) UnmarshalText(data []byte) error {
+	switch NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem(data) {
+	case NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSun:
+		*s = NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSun
+		return nil
+	case NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemMon:
+		*s = NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemMon
+		return nil
+	case NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemTue:
+		*s = NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemTue
+		return nil
+	case NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemWed:
+		*s = NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemWed
+		return nil
+	case NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemThu:
+		*s = NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemThu
+		return nil
+	case NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemFri:
+		*s = NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemFri
+		return nil
+	case NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSat:
+		*s = NosqlCreateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSat
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 type NosqlCreateRequestApplianceUserInterfacesItem struct {
 	// スイッチ.
 	Switch NosqlCreateRequestApplianceUserInterfacesItemSwitch `json:"Switch"`
-	// ユーザーIPアドレス1.
+	// ユーザIPアドレス1
+	// **新規作成時・ノード追加時必須**.
 	UserIPAddress1 netip.Addr `json:"UserIPAddress1"`
-	// ユーザーIPアドレス2.
+	// ユーザIPアドレス2
+	// **新規作成時・ノード追加時必須**.
 	UserIPAddress2 OptIPv4 `json:"UserIPAddress2"`
-	// ユーザーIPアドレス3.
+	// ユーザIPアドレス3
+	// **新規作成時必須**.
 	UserIPAddress3 OptIPv4                                                    `json:"UserIPAddress3"`
 	UserSubnet     OptNosqlCreateRequestApplianceUserInterfacesItemUserSubnet `json:"UserSubnet"`
 }
@@ -1521,7 +3477,8 @@ func (s *NosqlCreateRequestApplianceUserInterfacesItem) SetUserSubnet(val OptNos
 
 // スイッチ.
 type NosqlCreateRequestApplianceUserInterfacesItemSwitch struct {
-	// スイッチID.
+	// スイッチID
+	// **新規作成時・ノード追加時必須**.
 	ID string `json:"ID"`
 }
 
@@ -1536,9 +3493,11 @@ func (s *NosqlCreateRequestApplianceUserInterfacesItemSwitch) SetID(val string) 
 }
 
 type NosqlCreateRequestApplianceUserInterfacesItemUserSubnet struct {
-	// ゲートウェイのアドレス.
+	// ゲートウェイのアドレス
+	// **新規作成時・ノード追加時必須**.
 	DefaultRoute string `json:"DefaultRoute"`
-	// ネットマスク.
+	// ネットマスク
+	// **新規作成時・ノード追加時必須**.
 	NetworkMaskLen int `json:"NetworkMaskLen"`
 }
 
@@ -1580,7 +3539,7 @@ type NosqlCreateResponse struct {
 	Availability OptInt                             `json:"Availability"`
 	ServerCount  OptInt                             `json:"ServerCount"`
 	HiddenRemark OptNosqlCreateResponseHiddenRemark `json:"HiddenRemark"`
-	Success      OptString                          `json:"Success"`
+	Success      OptSuccess                         `json:"Success"`
 	IsOk         OptIsOk                            `json:"is_ok"`
 }
 
@@ -1650,7 +3609,7 @@ func (s *NosqlCreateResponse) GetHiddenRemark() OptNosqlCreateResponseHiddenRema
 }
 
 // GetSuccess returns the value of Success.
-func (s *NosqlCreateResponse) GetSuccess() OptString {
+func (s *NosqlCreateResponse) GetSuccess() OptSuccess {
 	return s.Success
 }
 
@@ -1725,7 +3684,7 @@ func (s *NosqlCreateResponse) SetHiddenRemark(val OptNosqlCreateResponseHiddenRe
 }
 
 // SetSuccess sets the value of Success.
-func (s *NosqlCreateResponse) SetSuccess(val OptString) {
+func (s *NosqlCreateResponse) SetSuccess(val OptSuccess) {
 	s.Success = val
 }
 
@@ -1752,7 +3711,7 @@ func (s *NosqlCreateResponseAccount) SetID(val OptString) {
 
 type NosqlCreateResponseHiddenRemark struct {
 	PlanSpec  OptNosqlCreateResponseHiddenRemarkPlanSpec  `json:"PlanSpec"`
-	Encripted OptNosqlCreateResponseHiddenRemarkEncripted `json:"Encripted"`
+	Encrypted OptNosqlCreateResponseHiddenRemarkEncrypted `json:"Encrypted"`
 }
 
 // GetPlanSpec returns the value of PlanSpec.
@@ -1760,9 +3719,9 @@ func (s *NosqlCreateResponseHiddenRemark) GetPlanSpec() OptNosqlCreateResponseHi
 	return s.PlanSpec
 }
 
-// GetEncripted returns the value of Encripted.
-func (s *NosqlCreateResponseHiddenRemark) GetEncripted() OptNosqlCreateResponseHiddenRemarkEncripted {
-	return s.Encripted
+// GetEncrypted returns the value of Encrypted.
+func (s *NosqlCreateResponseHiddenRemark) GetEncrypted() OptNosqlCreateResponseHiddenRemarkEncrypted {
+	return s.Encrypted
 }
 
 // SetPlanSpec sets the value of PlanSpec.
@@ -1770,12 +3729,12 @@ func (s *NosqlCreateResponseHiddenRemark) SetPlanSpec(val OptNosqlCreateResponse
 	s.PlanSpec = val
 }
 
-// SetEncripted sets the value of Encripted.
-func (s *NosqlCreateResponseHiddenRemark) SetEncripted(val OptNosqlCreateResponseHiddenRemarkEncripted) {
-	s.Encripted = val
+// SetEncrypted sets the value of Encrypted.
+func (s *NosqlCreateResponseHiddenRemark) SetEncrypted(val OptNosqlCreateResponseHiddenRemarkEncrypted) {
+	s.Encrypted = val
 }
 
-type NosqlCreateResponseHiddenRemarkEncripted struct {
+type NosqlCreateResponseHiddenRemarkEncrypted struct {
 	Algorithm   OptString `json:"Algorithm"`
 	IV          OptString `json:"IV"`
 	MD5         OptString `json:"md5"`
@@ -1784,52 +3743,52 @@ type NosqlCreateResponseHiddenRemarkEncripted struct {
 }
 
 // GetAlgorithm returns the value of Algorithm.
-func (s *NosqlCreateResponseHiddenRemarkEncripted) GetAlgorithm() OptString {
+func (s *NosqlCreateResponseHiddenRemarkEncrypted) GetAlgorithm() OptString {
 	return s.Algorithm
 }
 
 // GetIV returns the value of IV.
-func (s *NosqlCreateResponseHiddenRemarkEncripted) GetIV() OptString {
+func (s *NosqlCreateResponseHiddenRemarkEncrypted) GetIV() OptString {
 	return s.IV
 }
 
 // GetMD5 returns the value of MD5.
-func (s *NosqlCreateResponseHiddenRemarkEncripted) GetMD5() OptString {
+func (s *NosqlCreateResponseHiddenRemarkEncrypted) GetMD5() OptString {
 	return s.MD5
 }
 
 // GetAssociative returns the value of Associative.
-func (s *NosqlCreateResponseHiddenRemarkEncripted) GetAssociative() OptBool {
+func (s *NosqlCreateResponseHiddenRemarkEncrypted) GetAssociative() OptBool {
 	return s.Associative
 }
 
 // GetData returns the value of Data.
-func (s *NosqlCreateResponseHiddenRemarkEncripted) GetData() OptString {
+func (s *NosqlCreateResponseHiddenRemarkEncrypted) GetData() OptString {
 	return s.Data
 }
 
 // SetAlgorithm sets the value of Algorithm.
-func (s *NosqlCreateResponseHiddenRemarkEncripted) SetAlgorithm(val OptString) {
+func (s *NosqlCreateResponseHiddenRemarkEncrypted) SetAlgorithm(val OptString) {
 	s.Algorithm = val
 }
 
 // SetIV sets the value of IV.
-func (s *NosqlCreateResponseHiddenRemarkEncripted) SetIV(val OptString) {
+func (s *NosqlCreateResponseHiddenRemarkEncrypted) SetIV(val OptString) {
 	s.IV = val
 }
 
 // SetMD5 sets the value of MD5.
-func (s *NosqlCreateResponseHiddenRemarkEncripted) SetMD5(val OptString) {
+func (s *NosqlCreateResponseHiddenRemarkEncrypted) SetMD5(val OptString) {
 	s.MD5 = val
 }
 
 // SetAssociative sets the value of Associative.
-func (s *NosqlCreateResponseHiddenRemarkEncripted) SetAssociative(val OptBool) {
+func (s *NosqlCreateResponseHiddenRemarkEncrypted) SetAssociative(val OptBool) {
 	s.Associative = val
 }
 
 // SetData sets the value of Data.
-func (s *NosqlCreateResponseHiddenRemarkEncripted) SetData(val OptString) {
+func (s *NosqlCreateResponseHiddenRemarkEncrypted) SetData(val OptString) {
 	s.Data = val
 }
 
@@ -1950,12 +3909,12 @@ func (s *NosqlGetParameter) SetSettingValue(val OptString) {
 
 // Ref: #/components/schemas/NosqlGetResponse
 type NosqlGetResponse struct {
-	Appliance OptNosqlAppliance `json:"Appliance"`
+	Appliance GetNosqlAppliance `json:"Appliance"`
 	IsOk      OptIsOk           `json:"is_ok"`
 }
 
 // GetAppliance returns the value of Appliance.
-func (s *NosqlGetResponse) GetAppliance() OptNosqlAppliance {
+func (s *NosqlGetResponse) GetAppliance() GetNosqlAppliance {
 	return s.Appliance
 }
 
@@ -1965,7 +3924,7 @@ func (s *NosqlGetResponse) GetIsOk() OptIsOk {
 }
 
 // SetAppliance sets the value of Appliance.
-func (s *NosqlGetResponse) SetAppliance(val OptNosqlAppliance) {
+func (s *NosqlGetResponse) SetAppliance(val GetNosqlAppliance) {
 	s.Appliance = val
 }
 
@@ -2091,11 +4050,11 @@ func (s *NosqlIsOkResponseNosql) SetIsOk(val OptIsOk) {
 
 // Ref: #/components/schemas/NosqlListResponse
 type NosqlListResponse struct {
-	From       int              `json:"From"`
-	Count      int              `json:"Count"`
-	Total      int              `json:"Total"`
-	Appliances []NosqlAppliance `json:"Appliances"`
-	IsOk       OptIsOk          `json:"is_ok"`
+	From       int                 `json:"From"`
+	Count      int                 `json:"Count"`
+	Total      int                 `json:"Total"`
+	Appliances []GetNosqlAppliance `json:"Appliances"`
+	IsOk       OptIsOk             `json:"is_ok"`
 }
 
 // GetFrom returns the value of From.
@@ -2114,7 +4073,7 @@ func (s *NosqlListResponse) GetTotal() int {
 }
 
 // GetAppliances returns the value of Appliances.
-func (s *NosqlListResponse) GetAppliances() []NosqlAppliance {
+func (s *NosqlListResponse) GetAppliances() []GetNosqlAppliance {
 	return s.Appliances
 }
 
@@ -2139,7 +4098,7 @@ func (s *NosqlListResponse) SetTotal(val int) {
 }
 
 // SetAppliances sets the value of Appliances.
-func (s *NosqlListResponse) SetAppliances(val []NosqlAppliance) {
+func (s *NosqlListResponse) SetAppliances(val []GetNosqlAppliance) {
 	s.Appliances = val
 }
 
@@ -2149,6 +4108,74 @@ func (s *NosqlListResponse) SetIsOk(val OptIsOk) {
 }
 
 func (*NosqlListResponse) listDBRes() {}
+
+// ノードのアプライアンス情報.
+// Ref: #/components/schemas/NosqlNodeAppliance
+type NosqlNodeAppliance struct {
+	// アプライアンスID.
+	ID           string       `json:"ID"`
+	Availability Availability `json:"Availability"`
+	// ゾーン情報.
+	Zone OptNosqlNodeApplianceZone `json:"Zone"`
+	// ノードの詳細情報.
+	Nodes []NosqldbNodeStatus `json:"Nodes"`
+}
+
+// GetID returns the value of ID.
+func (s *NosqlNodeAppliance) GetID() string {
+	return s.ID
+}
+
+// GetAvailability returns the value of Availability.
+func (s *NosqlNodeAppliance) GetAvailability() Availability {
+	return s.Availability
+}
+
+// GetZone returns the value of Zone.
+func (s *NosqlNodeAppliance) GetZone() OptNosqlNodeApplianceZone {
+	return s.Zone
+}
+
+// GetNodes returns the value of Nodes.
+func (s *NosqlNodeAppliance) GetNodes() []NosqldbNodeStatus {
+	return s.Nodes
+}
+
+// SetID sets the value of ID.
+func (s *NosqlNodeAppliance) SetID(val string) {
+	s.ID = val
+}
+
+// SetAvailability sets the value of Availability.
+func (s *NosqlNodeAppliance) SetAvailability(val Availability) {
+	s.Availability = val
+}
+
+// SetZone sets the value of Zone.
+func (s *NosqlNodeAppliance) SetZone(val OptNosqlNodeApplianceZone) {
+	s.Zone = val
+}
+
+// SetNodes sets the value of Nodes.
+func (s *NosqlNodeAppliance) SetNodes(val []NosqldbNodeStatus) {
+	s.Nodes = val
+}
+
+// ゾーン情報.
+type NosqlNodeApplianceZone struct {
+	// ゾーン名.
+	Name OptString `json:"Name"`
+}
+
+// GetName returns the value of Name.
+func (s *NosqlNodeApplianceZone) GetName() OptString {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *NosqlNodeApplianceZone) SetName(val OptString) {
+	s.Name = val
+}
 
 // Ref: #/components/schemas/NosqlOkResponse
 type NosqlOkResponse struct {
@@ -2224,42 +4251,27 @@ func (s *NosqlPutParameter) SetSettingValue(val string) {
 
 // Ref: #/components/schemas/NosqlPutVersionRequest
 type NosqlPutVersionRequest struct {
-	Nosql NosqlPutVersionRequestNosql `json:"nosql"`
+	Nosql NosqlVersion `json:"nosql"`
 }
 
 // GetNosql returns the value of Nosql.
-func (s *NosqlPutVersionRequest) GetNosql() NosqlPutVersionRequestNosql {
+func (s *NosqlPutVersionRequest) GetNosql() NosqlVersion {
 	return s.Nosql
 }
 
 // SetNosql sets the value of Nosql.
-func (s *NosqlPutVersionRequest) SetNosql(val NosqlPutVersionRequestNosql) {
+func (s *NosqlPutVersionRequest) SetNosql(val NosqlVersion) {
 	s.Nosql = val
-}
-
-type NosqlPutVersionRequestNosql struct {
-	// NoSQLの更新可能なバージョン.
-	Version string `json:"version"`
-}
-
-// GetVersion returns the value of Version.
-func (s *NosqlPutVersionRequestNosql) GetVersion() string {
-	return s.Version
-}
-
-// SetVersion sets the value of Version.
-func (s *NosqlPutVersionRequestNosql) SetVersion(val string) {
-	s.Version = val
 }
 
 // Ref: #/components/schemas/NosqlPutVersionResponse
 type NosqlPutVersionResponse struct {
-	Nosql OptNosqlPutVersionResponseNosql `json:"nosql"`
-	IsOk  OptIsOk                         `json:"is_ok"`
+	Nosql OptNosqlVersion `json:"nosql"`
+	IsOk  OptIsOk         `json:"is_ok"`
 }
 
 // GetNosql returns the value of Nosql.
-func (s *NosqlPutVersionResponse) GetNosql() OptNosqlPutVersionResponseNosql {
+func (s *NosqlPutVersionResponse) GetNosql() OptNosqlVersion {
 	return s.Nosql
 }
 
@@ -2269,7 +4281,7 @@ func (s *NosqlPutVersionResponse) GetIsOk() OptIsOk {
 }
 
 // SetNosql sets the value of Nosql.
-func (s *NosqlPutVersionResponse) SetNosql(val OptNosqlPutVersionResponseNosql) {
+func (s *NosqlPutVersionResponse) SetNosql(val OptNosqlVersion) {
 	s.Nosql = val
 }
 
@@ -2280,29 +4292,14 @@ func (s *NosqlPutVersionResponse) SetIsOk(val OptIsOk) {
 
 func (*NosqlPutVersionResponse) putVersionRes() {}
 
-type NosqlPutVersionResponseNosql struct {
-	// NoSQLの更新を行ったバージョン.
-	Version OptString `json:"version"`
-}
-
-// GetVersion returns the value of Version.
-func (s *NosqlPutVersionResponseNosql) GetVersion() OptString {
-	return s.Version
-}
-
-// SetVersion sets the value of Version.
-func (s *NosqlPutVersionResponseNosql) SetVersion(val OptString) {
-	s.Version = val
-}
-
 // Ref: #/components/schemas/NosqlRemark
 type NosqlRemark struct {
-	Nosql   OptNosqlRemarkNosql      `json:"Nosql"`
+	Nosql   NosqlRemarkNosql         `json:"Nosql"`
 	Servers []NosqlRemarkServersItem `json:"Servers"`
 }
 
 // GetNosql returns the value of Nosql.
-func (s *NosqlRemark) GetNosql() OptNosqlRemarkNosql {
+func (s *NosqlRemark) GetNosql() NosqlRemarkNosql {
 	return s.Nosql
 }
 
@@ -2312,7 +4309,7 @@ func (s *NosqlRemark) GetServers() []NosqlRemarkServersItem {
 }
 
 // SetNosql sets the value of Nosql.
-func (s *NosqlRemark) SetNosql(val OptNosqlRemarkNosql) {
+func (s *NosqlRemark) SetNosql(val NosqlRemarkNosql) {
 	s.Nosql = val
 }
 
@@ -2322,50 +4319,70 @@ func (s *NosqlRemark) SetServers(val []NosqlRemarkServersItem) {
 }
 
 type NosqlRemarkNosql struct {
-	// データベースに使用するエンジン.
-	DatabaseEngine NosqlRemarkNosqlDatabaseEngine `json:"DatabaseEngine"`
-	// データベースバージョン.
-	DatabaseVersion string `json:"DatabaseVersion"`
-	// デフォルトユーザー名.
-	DefaultUser string `json:"DefaultUser"`
-	// ディスクサイズ(MB).
-	DiskSize NosqlRemarkNosqlDiskSize `json:"DiskSize"`
-	// メモリ(MB).
-	Memory NosqlRemarkNosqlMemory `json:"Memory"`
-	// ノード数.
+	// プライマリノード情報。
+	// **ノード追加時必須**
+	// ノード追加を行う場合は、対象となる既存NoSQLのアプライアンス情報を設定してください。.
+	PrimaryNodes OptNosqlRemarkNosqlPrimaryNodes `json:"PrimaryNodes"`
+	// データベースに使用するエンジン
+	// **新規作成時必須**.
+	DatabaseEngine OptNosqlRemarkNosqlDatabaseEngine `json:"DatabaseEngine"`
+	// データベースバージョン
+	// **新規作成時必須**.
+	DatabaseVersion OptString `json:"DatabaseVersion"`
+	// デフォルトユーザ名
+	// **新規作成時必須**.
+	DefaultUser OptString `json:"DefaultUser"`
+	// ディスクサイズ(MB)
+	// **新規作成時必須**.
+	DiskSize OptNosqlRemarkNosqlDiskSize `json:"DiskSize"`
+	// メモリ(MB)
+	// **新規作成時必須**.
+	Memory OptNosqlRemarkNosqlMemory `json:"Memory"`
+	// ノード数
+	// **新規作成時・ノード追加時必須**
+	// 新規作成時は3、ノード追加時は2を指定してください。.
 	Nodes int `json:"Nodes"`
-	// ポート.
-	Port int `json:"Port"`
-	// ストレージ.
-	Storage NosqlRemarkNosqlStorage `json:"Storage"`
-	// 仮想コア.
-	Virtualcore NosqlRemarkNosqlVirtualcore `json:"Virtualcore"`
-	// ゾーン.
+	// ポート
+	// **新規作成時必須**.
+	Port OptInt `json:"Port"`
+	// ストレージ
+	// **新規作成時必須**.
+	Storage OptNosqlRemarkNosqlStorage `json:"Storage"`
+	// 仮想コア
+	// **新規作成時必須**.
+	Virtualcore OptNosqlRemarkNosqlVirtualcore `json:"Virtualcore"`
+	// ゾーン
+	// **新規作成時・ノード追加時必須**.
 	Zone string `json:"Zone"`
 }
 
+// GetPrimaryNodes returns the value of PrimaryNodes.
+func (s *NosqlRemarkNosql) GetPrimaryNodes() OptNosqlRemarkNosqlPrimaryNodes {
+	return s.PrimaryNodes
+}
+
 // GetDatabaseEngine returns the value of DatabaseEngine.
-func (s *NosqlRemarkNosql) GetDatabaseEngine() NosqlRemarkNosqlDatabaseEngine {
+func (s *NosqlRemarkNosql) GetDatabaseEngine() OptNosqlRemarkNosqlDatabaseEngine {
 	return s.DatabaseEngine
 }
 
 // GetDatabaseVersion returns the value of DatabaseVersion.
-func (s *NosqlRemarkNosql) GetDatabaseVersion() string {
+func (s *NosqlRemarkNosql) GetDatabaseVersion() OptString {
 	return s.DatabaseVersion
 }
 
 // GetDefaultUser returns the value of DefaultUser.
-func (s *NosqlRemarkNosql) GetDefaultUser() string {
+func (s *NosqlRemarkNosql) GetDefaultUser() OptString {
 	return s.DefaultUser
 }
 
 // GetDiskSize returns the value of DiskSize.
-func (s *NosqlRemarkNosql) GetDiskSize() NosqlRemarkNosqlDiskSize {
+func (s *NosqlRemarkNosql) GetDiskSize() OptNosqlRemarkNosqlDiskSize {
 	return s.DiskSize
 }
 
 // GetMemory returns the value of Memory.
-func (s *NosqlRemarkNosql) GetMemory() NosqlRemarkNosqlMemory {
+func (s *NosqlRemarkNosql) GetMemory() OptNosqlRemarkNosqlMemory {
 	return s.Memory
 }
 
@@ -2375,17 +4392,17 @@ func (s *NosqlRemarkNosql) GetNodes() int {
 }
 
 // GetPort returns the value of Port.
-func (s *NosqlRemarkNosql) GetPort() int {
+func (s *NosqlRemarkNosql) GetPort() OptInt {
 	return s.Port
 }
 
 // GetStorage returns the value of Storage.
-func (s *NosqlRemarkNosql) GetStorage() NosqlRemarkNosqlStorage {
+func (s *NosqlRemarkNosql) GetStorage() OptNosqlRemarkNosqlStorage {
 	return s.Storage
 }
 
 // GetVirtualcore returns the value of Virtualcore.
-func (s *NosqlRemarkNosql) GetVirtualcore() NosqlRemarkNosqlVirtualcore {
+func (s *NosqlRemarkNosql) GetVirtualcore() OptNosqlRemarkNosqlVirtualcore {
 	return s.Virtualcore
 }
 
@@ -2394,28 +4411,33 @@ func (s *NosqlRemarkNosql) GetZone() string {
 	return s.Zone
 }
 
+// SetPrimaryNodes sets the value of PrimaryNodes.
+func (s *NosqlRemarkNosql) SetPrimaryNodes(val OptNosqlRemarkNosqlPrimaryNodes) {
+	s.PrimaryNodes = val
+}
+
 // SetDatabaseEngine sets the value of DatabaseEngine.
-func (s *NosqlRemarkNosql) SetDatabaseEngine(val NosqlRemarkNosqlDatabaseEngine) {
+func (s *NosqlRemarkNosql) SetDatabaseEngine(val OptNosqlRemarkNosqlDatabaseEngine) {
 	s.DatabaseEngine = val
 }
 
 // SetDatabaseVersion sets the value of DatabaseVersion.
-func (s *NosqlRemarkNosql) SetDatabaseVersion(val string) {
+func (s *NosqlRemarkNosql) SetDatabaseVersion(val OptString) {
 	s.DatabaseVersion = val
 }
 
 // SetDefaultUser sets the value of DefaultUser.
-func (s *NosqlRemarkNosql) SetDefaultUser(val string) {
+func (s *NosqlRemarkNosql) SetDefaultUser(val OptString) {
 	s.DefaultUser = val
 }
 
 // SetDiskSize sets the value of DiskSize.
-func (s *NosqlRemarkNosql) SetDiskSize(val NosqlRemarkNosqlDiskSize) {
+func (s *NosqlRemarkNosql) SetDiskSize(val OptNosqlRemarkNosqlDiskSize) {
 	s.DiskSize = val
 }
 
 // SetMemory sets the value of Memory.
-func (s *NosqlRemarkNosql) SetMemory(val NosqlRemarkNosqlMemory) {
+func (s *NosqlRemarkNosql) SetMemory(val OptNosqlRemarkNosqlMemory) {
 	s.Memory = val
 }
 
@@ -2425,17 +4447,17 @@ func (s *NosqlRemarkNosql) SetNodes(val int) {
 }
 
 // SetPort sets the value of Port.
-func (s *NosqlRemarkNosql) SetPort(val int) {
+func (s *NosqlRemarkNosql) SetPort(val OptInt) {
 	s.Port = val
 }
 
 // SetStorage sets the value of Storage.
-func (s *NosqlRemarkNosql) SetStorage(val NosqlRemarkNosqlStorage) {
+func (s *NosqlRemarkNosql) SetStorage(val OptNosqlRemarkNosqlStorage) {
 	s.Storage = val
 }
 
 // SetVirtualcore sets the value of Virtualcore.
-func (s *NosqlRemarkNosql) SetVirtualcore(val NosqlRemarkNosqlVirtualcore) {
+func (s *NosqlRemarkNosql) SetVirtualcore(val OptNosqlRemarkNosqlVirtualcore) {
 	s.Virtualcore = val
 }
 
@@ -2444,7 +4466,8 @@ func (s *NosqlRemarkNosql) SetZone(val string) {
 	s.Zone = val
 }
 
-// データベースに使用するエンジン.
+// データベースに使用するエンジン
+// **新規作成時必須**.
 type NosqlRemarkNosqlDatabaseEngine string
 
 const (
@@ -2479,7 +4502,8 @@ func (s *NosqlRemarkNosqlDatabaseEngine) UnmarshalText(data []byte) error {
 	}
 }
 
-// ディスクサイズ(MB).
+// ディスクサイズ(MB)
+// **新規作成時必須**.
 type NosqlRemarkNosqlDiskSize int
 
 const (
@@ -2493,7 +4517,8 @@ func (NosqlRemarkNosqlDiskSize) AllValues() []NosqlRemarkNosqlDiskSize {
 	}
 }
 
-// メモリ(MB).
+// メモリ(MB)
+// **新規作成時必須**.
 type NosqlRemarkNosqlMemory int
 
 const (
@@ -2507,7 +4532,76 @@ func (NosqlRemarkNosqlMemory) AllValues() []NosqlRemarkNosqlMemory {
 	}
 }
 
-// ストレージ.
+// プライマリノード情報。
+// **ノード追加時必須**
+// ノード追加を行う場合は、対象となる既存NoSQLのアプライアンス情報を設定してください。.
+type NosqlRemarkNosqlPrimaryNodes struct {
+	// 既存のNoSQLのアプライアンス情報
+	// **ノード追加時必須**.
+	Appliance NosqlRemarkNosqlPrimaryNodesAppliance `json:"Appliance"`
+}
+
+// GetAppliance returns the value of Appliance.
+func (s *NosqlRemarkNosqlPrimaryNodes) GetAppliance() NosqlRemarkNosqlPrimaryNodesAppliance {
+	return s.Appliance
+}
+
+// SetAppliance sets the value of Appliance.
+func (s *NosqlRemarkNosqlPrimaryNodes) SetAppliance(val NosqlRemarkNosqlPrimaryNodesAppliance) {
+	s.Appliance = val
+}
+
+// 既存のNoSQLのアプライアンス情報
+// **ノード追加時必須**.
+type NosqlRemarkNosqlPrimaryNodesAppliance struct {
+	// 既存のNoSQLのアプライアンスID
+	// **ノード追加時必須**.
+	ID string `json:"ID"`
+	// 既存のNoSQLのゾーン
+	// **ノード追加時必須**.
+	Zone NosqlRemarkNosqlPrimaryNodesApplianceZone `json:"Zone"`
+}
+
+// GetID returns the value of ID.
+func (s *NosqlRemarkNosqlPrimaryNodesAppliance) GetID() string {
+	return s.ID
+}
+
+// GetZone returns the value of Zone.
+func (s *NosqlRemarkNosqlPrimaryNodesAppliance) GetZone() NosqlRemarkNosqlPrimaryNodesApplianceZone {
+	return s.Zone
+}
+
+// SetID sets the value of ID.
+func (s *NosqlRemarkNosqlPrimaryNodesAppliance) SetID(val string) {
+	s.ID = val
+}
+
+// SetZone sets the value of Zone.
+func (s *NosqlRemarkNosqlPrimaryNodesAppliance) SetZone(val NosqlRemarkNosqlPrimaryNodesApplianceZone) {
+	s.Zone = val
+}
+
+// 既存のNoSQLのゾーン
+// **ノード追加時必須**.
+type NosqlRemarkNosqlPrimaryNodesApplianceZone struct {
+	// 既存のNoSQLのゾーン情報
+	// **ノード追加時必須**.
+	Name string `json:"Name"`
+}
+
+// GetName returns the value of Name.
+func (s *NosqlRemarkNosqlPrimaryNodesApplianceZone) GetName() string {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *NosqlRemarkNosqlPrimaryNodesApplianceZone) SetName(val string) {
+	s.Name = val
+}
+
+// ストレージ
+// **新規作成時必須**.
 type NosqlRemarkNosqlStorage string
 
 const (
@@ -2542,7 +4636,8 @@ func (s *NosqlRemarkNosqlStorage) UnmarshalText(data []byte) error {
 	}
 }
 
-// 仮想コア.
+// 仮想コア
+// **新規作成時必須**.
 type NosqlRemarkNosqlVirtualcore int
 
 const (
@@ -2557,8 +4652,9 @@ func (NosqlRemarkNosqlVirtualcore) AllValues() []NosqlRemarkNosqlVirtualcore {
 }
 
 type NosqlRemarkServersItem struct {
-	// ユーザIPアドレス
-	// ※Node数分指定する.
+	// ユーザ側スイッチに接続するIPアドレス
+	// **新規作成時・ノード追加時必須**
+	// ※ノード数分指定する.
 	UserIPAddress netip.Addr `json:"UserIPAddress"`
 }
 
@@ -2572,12 +4668,100 @@ func (s *NosqlRemarkServersItem) SetUserIPAddress(val netip.Addr) {
 	s.UserIPAddress = val
 }
 
+// Ref: #/components/schemas/NosqlRepairRequest
+type NosqlRepairRequest struct {
+	Nosql OptNosqlRepairRequestNosql `json:"nosql"`
+}
+
+// GetNosql returns the value of Nosql.
+func (s *NosqlRepairRequest) GetNosql() OptNosqlRepairRequestNosql {
+	return s.Nosql
+}
+
+// SetNosql sets the value of Nosql.
+func (s *NosqlRepairRequest) SetNosql(val OptNosqlRepairRequestNosql) {
+	s.Nosql = val
+}
+
+func (*NosqlRepairRequest) postNoSQLRepairRes() {}
+
+type NosqlRepairRequestNosql struct {
+	// リペアタイプ
+	// | 値          | 説明      | 実行コマンド                 |
+	// |-------------|-----------|-----------------------------|
+	// | Incremental | 増分リペア | nodetool repair -pr         |
+	// | Full        | 完全リペア | nodetool repair --full -pr  |.
+	RepairType OptNosqlRepairRequestNosqlRepairType `json:"repairType"`
+}
+
+// GetRepairType returns the value of RepairType.
+func (s *NosqlRepairRequestNosql) GetRepairType() OptNosqlRepairRequestNosqlRepairType {
+	return s.RepairType
+}
+
+// SetRepairType sets the value of RepairType.
+func (s *NosqlRepairRequestNosql) SetRepairType(val OptNosqlRepairRequestNosqlRepairType) {
+	s.RepairType = val
+}
+
+// リペアタイプ
+// | 値          | 説明      | 実行コマンド                 |
+// |-------------|-----------|-----------------------------|
+// | Incremental | 増分リペア | nodetool repair -pr         |
+// | Full        | 完全リペア | nodetool repair --full -pr  |.
+type NosqlRepairRequestNosqlRepairType string
+
+const (
+	NosqlRepairRequestNosqlRepairTypeIncremental NosqlRepairRequestNosqlRepairType = "Incremental"
+	NosqlRepairRequestNosqlRepairTypeFull        NosqlRepairRequestNosqlRepairType = "Full"
+)
+
+// AllValues returns all NosqlRepairRequestNosqlRepairType values.
+func (NosqlRepairRequestNosqlRepairType) AllValues() []NosqlRepairRequestNosqlRepairType {
+	return []NosqlRepairRequestNosqlRepairType{
+		NosqlRepairRequestNosqlRepairTypeIncremental,
+		NosqlRepairRequestNosqlRepairTypeFull,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NosqlRepairRequestNosqlRepairType) MarshalText() ([]byte, error) {
+	switch s {
+	case NosqlRepairRequestNosqlRepairTypeIncremental:
+		return []byte(s), nil
+	case NosqlRepairRequestNosqlRepairTypeFull:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NosqlRepairRequestNosqlRepairType) UnmarshalText(data []byte) error {
+	switch NosqlRepairRequestNosqlRepairType(data) {
+	case NosqlRepairRequestNosqlRepairTypeIncremental:
+		*s = NosqlRepairRequestNosqlRepairTypeIncremental
+		return nil
+	case NosqlRepairRequestNosqlRepairTypeFull:
+		*s = NosqlRepairRequestNosqlRepairTypeFull
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/NosqlSettings
 type NosqlSettings struct {
 	// バックアップ情報.
 	Backup OptNilNosqlSettingsBackup `json:"Backup"`
 	// 送信元ネットワークアドレス.
 	SourceNetwork []string `json:"SourceNetwork"`
+	// 予備IPアドレス
+	// **新規作成時必須**
+	// ※デッドノード発生時、ノード切替を行う際に使用する予備のIPアドレス.
+	ReserveIPAddress OptIPv4 `json:"ReserveIPAddress"`
+	// 定期リペア設定.
+	Repair OptNilNosqlSettingsRepair `json:"Repair"`
 }
 
 // GetBackup returns the value of Backup.
@@ -2590,6 +4774,16 @@ func (s *NosqlSettings) GetSourceNetwork() []string {
 	return s.SourceNetwork
 }
 
+// GetReserveIPAddress returns the value of ReserveIPAddress.
+func (s *NosqlSettings) GetReserveIPAddress() OptIPv4 {
+	return s.ReserveIPAddress
+}
+
+// GetRepair returns the value of Repair.
+func (s *NosqlSettings) GetRepair() OptNilNosqlSettingsRepair {
+	return s.Repair
+}
+
 // SetBackup sets the value of Backup.
 func (s *NosqlSettings) SetBackup(val OptNilNosqlSettingsBackup) {
 	s.Backup = val
@@ -2598,6 +4792,16 @@ func (s *NosqlSettings) SetBackup(val OptNilNosqlSettingsBackup) {
 // SetSourceNetwork sets the value of SourceNetwork.
 func (s *NosqlSettings) SetSourceNetwork(val []string) {
 	s.SourceNetwork = val
+}
+
+// SetReserveIPAddress sets the value of ReserveIPAddress.
+func (s *NosqlSettings) SetReserveIPAddress(val OptIPv4) {
+	s.ReserveIPAddress = val
+}
+
+// SetRepair sets the value of Repair.
+func (s *NosqlSettings) SetRepair(val OptNilNosqlSettingsRepair) {
+	s.Repair = val
 }
 
 // バックアップ情報.
@@ -2728,14 +4932,283 @@ func (s *NosqlSettingsBackupDayOfWeekItem) UnmarshalText(data []byte) error {
 	}
 }
 
+// 定期リペア設定.
+type NosqlSettingsRepair struct {
+	// 増分リペア設定.
+	Incremental OptNosqlSettingsRepairIncremental `json:"Incremental"`
+	// 完全リペア設定.
+	Full OptNosqlSettingsRepairFull `json:"Full"`
+}
+
+// GetIncremental returns the value of Incremental.
+func (s *NosqlSettingsRepair) GetIncremental() OptNosqlSettingsRepairIncremental {
+	return s.Incremental
+}
+
+// GetFull returns the value of Full.
+func (s *NosqlSettingsRepair) GetFull() OptNosqlSettingsRepairFull {
+	return s.Full
+}
+
+// SetIncremental sets the value of Incremental.
+func (s *NosqlSettingsRepair) SetIncremental(val OptNosqlSettingsRepairIncremental) {
+	s.Incremental = val
+}
+
+// SetFull sets the value of Full.
+func (s *NosqlSettingsRepair) SetFull(val OptNosqlSettingsRepairFull) {
+	s.Full = val
+}
+
+// 完全リペア設定.
+type NosqlSettingsRepairFull struct {
+	// 7日ごとの実行間隔（日数）.
+	Interval NosqlSettingsRepairFullInterval `json:"Interval"`
+	// 実行曜日.
+	DayOfWeek NosqlSettingsRepairFullDayOfWeek `json:"DayOfWeek"`
+	// 実行時間.
+	Time string `json:"Time"`
+}
+
+// GetInterval returns the value of Interval.
+func (s *NosqlSettingsRepairFull) GetInterval() NosqlSettingsRepairFullInterval {
+	return s.Interval
+}
+
+// GetDayOfWeek returns the value of DayOfWeek.
+func (s *NosqlSettingsRepairFull) GetDayOfWeek() NosqlSettingsRepairFullDayOfWeek {
+	return s.DayOfWeek
+}
+
+// GetTime returns the value of Time.
+func (s *NosqlSettingsRepairFull) GetTime() string {
+	return s.Time
+}
+
+// SetInterval sets the value of Interval.
+func (s *NosqlSettingsRepairFull) SetInterval(val NosqlSettingsRepairFullInterval) {
+	s.Interval = val
+}
+
+// SetDayOfWeek sets the value of DayOfWeek.
+func (s *NosqlSettingsRepairFull) SetDayOfWeek(val NosqlSettingsRepairFullDayOfWeek) {
+	s.DayOfWeek = val
+}
+
+// SetTime sets the value of Time.
+func (s *NosqlSettingsRepairFull) SetTime(val string) {
+	s.Time = val
+}
+
+// 実行曜日.
+type NosqlSettingsRepairFullDayOfWeek string
+
+const (
+	NosqlSettingsRepairFullDayOfWeekSun NosqlSettingsRepairFullDayOfWeek = "sun"
+	NosqlSettingsRepairFullDayOfWeekMon NosqlSettingsRepairFullDayOfWeek = "mon"
+	NosqlSettingsRepairFullDayOfWeekTue NosqlSettingsRepairFullDayOfWeek = "tue"
+	NosqlSettingsRepairFullDayOfWeekWed NosqlSettingsRepairFullDayOfWeek = "wed"
+	NosqlSettingsRepairFullDayOfWeekThu NosqlSettingsRepairFullDayOfWeek = "thu"
+	NosqlSettingsRepairFullDayOfWeekFri NosqlSettingsRepairFullDayOfWeek = "fri"
+	NosqlSettingsRepairFullDayOfWeekSat NosqlSettingsRepairFullDayOfWeek = "sat"
+)
+
+// AllValues returns all NosqlSettingsRepairFullDayOfWeek values.
+func (NosqlSettingsRepairFullDayOfWeek) AllValues() []NosqlSettingsRepairFullDayOfWeek {
+	return []NosqlSettingsRepairFullDayOfWeek{
+		NosqlSettingsRepairFullDayOfWeekSun,
+		NosqlSettingsRepairFullDayOfWeekMon,
+		NosqlSettingsRepairFullDayOfWeekTue,
+		NosqlSettingsRepairFullDayOfWeekWed,
+		NosqlSettingsRepairFullDayOfWeekThu,
+		NosqlSettingsRepairFullDayOfWeekFri,
+		NosqlSettingsRepairFullDayOfWeekSat,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NosqlSettingsRepairFullDayOfWeek) MarshalText() ([]byte, error) {
+	switch s {
+	case NosqlSettingsRepairFullDayOfWeekSun:
+		return []byte(s), nil
+	case NosqlSettingsRepairFullDayOfWeekMon:
+		return []byte(s), nil
+	case NosqlSettingsRepairFullDayOfWeekTue:
+		return []byte(s), nil
+	case NosqlSettingsRepairFullDayOfWeekWed:
+		return []byte(s), nil
+	case NosqlSettingsRepairFullDayOfWeekThu:
+		return []byte(s), nil
+	case NosqlSettingsRepairFullDayOfWeekFri:
+		return []byte(s), nil
+	case NosqlSettingsRepairFullDayOfWeekSat:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NosqlSettingsRepairFullDayOfWeek) UnmarshalText(data []byte) error {
+	switch NosqlSettingsRepairFullDayOfWeek(data) {
+	case NosqlSettingsRepairFullDayOfWeekSun:
+		*s = NosqlSettingsRepairFullDayOfWeekSun
+		return nil
+	case NosqlSettingsRepairFullDayOfWeekMon:
+		*s = NosqlSettingsRepairFullDayOfWeekMon
+		return nil
+	case NosqlSettingsRepairFullDayOfWeekTue:
+		*s = NosqlSettingsRepairFullDayOfWeekTue
+		return nil
+	case NosqlSettingsRepairFullDayOfWeekWed:
+		*s = NosqlSettingsRepairFullDayOfWeekWed
+		return nil
+	case NosqlSettingsRepairFullDayOfWeekThu:
+		*s = NosqlSettingsRepairFullDayOfWeekThu
+		return nil
+	case NosqlSettingsRepairFullDayOfWeekFri:
+		*s = NosqlSettingsRepairFullDayOfWeekFri
+		return nil
+	case NosqlSettingsRepairFullDayOfWeekSat:
+		*s = NosqlSettingsRepairFullDayOfWeekSat
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// 7日ごとの実行間隔（日数）.
+type NosqlSettingsRepairFullInterval int
+
+const (
+	NosqlSettingsRepairFullInterval7  NosqlSettingsRepairFullInterval = 7
+	NosqlSettingsRepairFullInterval14 NosqlSettingsRepairFullInterval = 14
+	NosqlSettingsRepairFullInterval21 NosqlSettingsRepairFullInterval = 21
+	NosqlSettingsRepairFullInterval28 NosqlSettingsRepairFullInterval = 28
+)
+
+// AllValues returns all NosqlSettingsRepairFullInterval values.
+func (NosqlSettingsRepairFullInterval) AllValues() []NosqlSettingsRepairFullInterval {
+	return []NosqlSettingsRepairFullInterval{
+		NosqlSettingsRepairFullInterval7,
+		NosqlSettingsRepairFullInterval14,
+		NosqlSettingsRepairFullInterval21,
+		NosqlSettingsRepairFullInterval28,
+	}
+}
+
+// 増分リペア設定.
+type NosqlSettingsRepairIncremental struct {
+	// 実行曜日.
+	DaysOfWeek []NosqlSettingsRepairIncrementalDaysOfWeekItem `json:"DaysOfWeek"`
+	// 実行時間.
+	Time string `json:"Time"`
+}
+
+// GetDaysOfWeek returns the value of DaysOfWeek.
+func (s *NosqlSettingsRepairIncremental) GetDaysOfWeek() []NosqlSettingsRepairIncrementalDaysOfWeekItem {
+	return s.DaysOfWeek
+}
+
+// GetTime returns the value of Time.
+func (s *NosqlSettingsRepairIncremental) GetTime() string {
+	return s.Time
+}
+
+// SetDaysOfWeek sets the value of DaysOfWeek.
+func (s *NosqlSettingsRepairIncremental) SetDaysOfWeek(val []NosqlSettingsRepairIncrementalDaysOfWeekItem) {
+	s.DaysOfWeek = val
+}
+
+// SetTime sets the value of Time.
+func (s *NosqlSettingsRepairIncremental) SetTime(val string) {
+	s.Time = val
+}
+
+type NosqlSettingsRepairIncrementalDaysOfWeekItem string
+
+const (
+	NosqlSettingsRepairIncrementalDaysOfWeekItemSun NosqlSettingsRepairIncrementalDaysOfWeekItem = "sun"
+	NosqlSettingsRepairIncrementalDaysOfWeekItemMon NosqlSettingsRepairIncrementalDaysOfWeekItem = "mon"
+	NosqlSettingsRepairIncrementalDaysOfWeekItemTue NosqlSettingsRepairIncrementalDaysOfWeekItem = "tue"
+	NosqlSettingsRepairIncrementalDaysOfWeekItemWed NosqlSettingsRepairIncrementalDaysOfWeekItem = "wed"
+	NosqlSettingsRepairIncrementalDaysOfWeekItemThu NosqlSettingsRepairIncrementalDaysOfWeekItem = "thu"
+	NosqlSettingsRepairIncrementalDaysOfWeekItemFri NosqlSettingsRepairIncrementalDaysOfWeekItem = "fri"
+	NosqlSettingsRepairIncrementalDaysOfWeekItemSat NosqlSettingsRepairIncrementalDaysOfWeekItem = "sat"
+)
+
+// AllValues returns all NosqlSettingsRepairIncrementalDaysOfWeekItem values.
+func (NosqlSettingsRepairIncrementalDaysOfWeekItem) AllValues() []NosqlSettingsRepairIncrementalDaysOfWeekItem {
+	return []NosqlSettingsRepairIncrementalDaysOfWeekItem{
+		NosqlSettingsRepairIncrementalDaysOfWeekItemSun,
+		NosqlSettingsRepairIncrementalDaysOfWeekItemMon,
+		NosqlSettingsRepairIncrementalDaysOfWeekItemTue,
+		NosqlSettingsRepairIncrementalDaysOfWeekItemWed,
+		NosqlSettingsRepairIncrementalDaysOfWeekItemThu,
+		NosqlSettingsRepairIncrementalDaysOfWeekItemFri,
+		NosqlSettingsRepairIncrementalDaysOfWeekItemSat,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NosqlSettingsRepairIncrementalDaysOfWeekItem) MarshalText() ([]byte, error) {
+	switch s {
+	case NosqlSettingsRepairIncrementalDaysOfWeekItemSun:
+		return []byte(s), nil
+	case NosqlSettingsRepairIncrementalDaysOfWeekItemMon:
+		return []byte(s), nil
+	case NosqlSettingsRepairIncrementalDaysOfWeekItemTue:
+		return []byte(s), nil
+	case NosqlSettingsRepairIncrementalDaysOfWeekItemWed:
+		return []byte(s), nil
+	case NosqlSettingsRepairIncrementalDaysOfWeekItemThu:
+		return []byte(s), nil
+	case NosqlSettingsRepairIncrementalDaysOfWeekItemFri:
+		return []byte(s), nil
+	case NosqlSettingsRepairIncrementalDaysOfWeekItemSat:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NosqlSettingsRepairIncrementalDaysOfWeekItem) UnmarshalText(data []byte) error {
+	switch NosqlSettingsRepairIncrementalDaysOfWeekItem(data) {
+	case NosqlSettingsRepairIncrementalDaysOfWeekItemSun:
+		*s = NosqlSettingsRepairIncrementalDaysOfWeekItemSun
+		return nil
+	case NosqlSettingsRepairIncrementalDaysOfWeekItemMon:
+		*s = NosqlSettingsRepairIncrementalDaysOfWeekItemMon
+		return nil
+	case NosqlSettingsRepairIncrementalDaysOfWeekItemTue:
+		*s = NosqlSettingsRepairIncrementalDaysOfWeekItemTue
+		return nil
+	case NosqlSettingsRepairIncrementalDaysOfWeekItemWed:
+		*s = NosqlSettingsRepairIncrementalDaysOfWeekItemWed
+		return nil
+	case NosqlSettingsRepairIncrementalDaysOfWeekItemThu:
+		*s = NosqlSettingsRepairIncrementalDaysOfWeekItemThu
+		return nil
+	case NosqlSettingsRepairIncrementalDaysOfWeekItemFri:
+		*s = NosqlSettingsRepairIncrementalDaysOfWeekItemFri
+		return nil
+	case NosqlSettingsRepairIncrementalDaysOfWeekItemSat:
+		*s = NosqlSettingsRepairIncrementalDaysOfWeekItemSat
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/NosqlStatusResponse
 type NosqlStatusResponse struct {
-	Appliance NosqlStatusResponseAppliance `json:"Appliance"`
-	IsOk      OptIsOk                      `json:"is_ok"`
+	Appliance OptNosqlStatusResponseAppliance `json:"Appliance"`
+	IsOk      OptIsOk                         `json:"is_ok"`
 }
 
 // GetAppliance returns the value of Appliance.
-func (s *NosqlStatusResponse) GetAppliance() NosqlStatusResponseAppliance {
+func (s *NosqlStatusResponse) GetAppliance() OptNosqlStatusResponseAppliance {
 	return s.Appliance
 }
 
@@ -2745,7 +5218,7 @@ func (s *NosqlStatusResponse) GetIsOk() OptIsOk {
 }
 
 // SetAppliance sets the value of Appliance.
-func (s *NosqlStatusResponse) SetAppliance(val NosqlStatusResponseAppliance) {
+func (s *NosqlStatusResponse) SetAppliance(val OptNosqlStatusResponseAppliance) {
 	s.Appliance = val
 }
 
@@ -2757,28 +5230,28 @@ func (s *NosqlStatusResponse) SetIsOk(val OptIsOk) {
 func (*NosqlStatusResponse) confirmStatusDBRes() {}
 
 type NosqlStatusResponseAppliance struct {
-	ID string `json:"ID"`
+	ID OptString `json:"ID"`
 	// NoSQLのステータスレスポンス.
-	SettingsResponse NosqlStatusResponseApplianceSettingsResponse `json:"SettingsResponse"`
+	SettingsResponse OptNosqlStatusResponseApplianceSettingsResponse `json:"SettingsResponse"`
 }
 
 // GetID returns the value of ID.
-func (s *NosqlStatusResponseAppliance) GetID() string {
+func (s *NosqlStatusResponseAppliance) GetID() OptString {
 	return s.ID
 }
 
 // GetSettingsResponse returns the value of SettingsResponse.
-func (s *NosqlStatusResponseAppliance) GetSettingsResponse() NosqlStatusResponseApplianceSettingsResponse {
+func (s *NosqlStatusResponseAppliance) GetSettingsResponse() OptNosqlStatusResponseApplianceSettingsResponse {
 	return s.SettingsResponse
 }
 
 // SetID sets the value of ID.
-func (s *NosqlStatusResponseAppliance) SetID(val string) {
+func (s *NosqlStatusResponseAppliance) SetID(val OptString) {
 	s.ID = val
 }
 
 // SetSettingsResponse sets the value of SettingsResponse.
-func (s *NosqlStatusResponseAppliance) SetSettingsResponse(val NosqlStatusResponseApplianceSettingsResponse) {
+func (s *NosqlStatusResponseAppliance) SetSettingsResponse(val OptNosqlStatusResponseApplianceSettingsResponse) {
 	s.SettingsResponse = val
 }
 
@@ -2798,30 +5271,20 @@ func (s *NosqlStatusResponseApplianceSettingsResponse) SetNosql(val OptNosqlStat
 }
 
 type NosqlStatusResponseApplianceSettingsResponseNosql struct {
-	// 有効状態(true:有効, false:無効).
-	Enabled bool `json:"Enabled"`
-	// NoSQLの起動ステータス(preparing:準備中, up:起動, down:停止, error:エラー).
-	BootStatus string `json:"BootStatus"`
-	// NoSQLのバージョン.
-	DatabaseVersion string `json:"DatabaseVersion"`
+	// NoSQLの現在のバージョン.
+	DatabaseVersion OptString `json:"DatabaseVersion"`
 	// NoSQLの更新可能な最新のバージョン.
 	UpgradeVersion OptString `json:"UpgradeVersion"`
 	// ジョブ情報.
 	Jobs []NosqlStatusResponseApplianceSettingsResponseNosqlJobsItem `json:"Jobs"`
-}
-
-// GetEnabled returns the value of Enabled.
-func (s *NosqlStatusResponseApplianceSettingsResponseNosql) GetEnabled() bool {
-	return s.Enabled
-}
-
-// GetBootStatus returns the value of BootStatus.
-func (s *NosqlStatusResponseApplianceSettingsResponseNosql) GetBootStatus() string {
-	return s.BootStatus
+	// プライマリノード情報.
+	PrimaryNodes OptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes `json:"PrimaryNodes"`
+	// 追加されたノードの情報.
+	AddNodes []NosqlStatusResponseApplianceSettingsResponseNosqlAddNodesItem `json:"AddNodes"`
 }
 
 // GetDatabaseVersion returns the value of DatabaseVersion.
-func (s *NosqlStatusResponseApplianceSettingsResponseNosql) GetDatabaseVersion() string {
+func (s *NosqlStatusResponseApplianceSettingsResponseNosql) GetDatabaseVersion() OptString {
 	return s.DatabaseVersion
 }
 
@@ -2835,18 +5298,18 @@ func (s *NosqlStatusResponseApplianceSettingsResponseNosql) GetJobs() []NosqlSta
 	return s.Jobs
 }
 
-// SetEnabled sets the value of Enabled.
-func (s *NosqlStatusResponseApplianceSettingsResponseNosql) SetEnabled(val bool) {
-	s.Enabled = val
+// GetPrimaryNodes returns the value of PrimaryNodes.
+func (s *NosqlStatusResponseApplianceSettingsResponseNosql) GetPrimaryNodes() OptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes {
+	return s.PrimaryNodes
 }
 
-// SetBootStatus sets the value of BootStatus.
-func (s *NosqlStatusResponseApplianceSettingsResponseNosql) SetBootStatus(val string) {
-	s.BootStatus = val
+// GetAddNodes returns the value of AddNodes.
+func (s *NosqlStatusResponseApplianceSettingsResponseNosql) GetAddNodes() []NosqlStatusResponseApplianceSettingsResponseNosqlAddNodesItem {
+	return s.AddNodes
 }
 
 // SetDatabaseVersion sets the value of DatabaseVersion.
-func (s *NosqlStatusResponseApplianceSettingsResponseNosql) SetDatabaseVersion(val string) {
+func (s *NosqlStatusResponseApplianceSettingsResponseNosql) SetDatabaseVersion(val OptString) {
 	s.DatabaseVersion = val
 }
 
@@ -2858,6 +5321,30 @@ func (s *NosqlStatusResponseApplianceSettingsResponseNosql) SetUpgradeVersion(va
 // SetJobs sets the value of Jobs.
 func (s *NosqlStatusResponseApplianceSettingsResponseNosql) SetJobs(val []NosqlStatusResponseApplianceSettingsResponseNosqlJobsItem) {
 	s.Jobs = val
+}
+
+// SetPrimaryNodes sets the value of PrimaryNodes.
+func (s *NosqlStatusResponseApplianceSettingsResponseNosql) SetPrimaryNodes(val OptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes) {
+	s.PrimaryNodes = val
+}
+
+// SetAddNodes sets the value of AddNodes.
+func (s *NosqlStatusResponseApplianceSettingsResponseNosql) SetAddNodes(val []NosqlStatusResponseApplianceSettingsResponseNosqlAddNodesItem) {
+	s.AddNodes = val
+}
+
+type NosqlStatusResponseApplianceSettingsResponseNosqlAddNodesItem struct {
+	Appliance NosqlNodeAppliance `json:"Appliance"`
+}
+
+// GetAppliance returns the value of Appliance.
+func (s *NosqlStatusResponseApplianceSettingsResponseNosqlAddNodesItem) GetAppliance() NosqlNodeAppliance {
+	return s.Appliance
+}
+
+// SetAppliance sets the value of Appliance.
+func (s *NosqlStatusResponseApplianceSettingsResponseNosqlAddNodesItem) SetAppliance(val NosqlNodeAppliance) {
+	s.Appliance = val
 }
 
 type NosqlStatusResponseApplianceSettingsResponseNosqlJobsItem struct {
@@ -2885,6 +5372,21 @@ func (s *NosqlStatusResponseApplianceSettingsResponseNosqlJobsItem) SetJobType(v
 // SetJobStatus sets the value of JobStatus.
 func (s *NosqlStatusResponseApplianceSettingsResponseNosqlJobsItem) SetJobStatus(val OptString) {
 	s.JobStatus = val
+}
+
+// プライマリノード情報.
+type NosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes struct {
+	Appliance OptNosqlNodeAppliance `json:"Appliance"`
+}
+
+// GetAppliance returns the value of Appliance.
+func (s *NosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes) GetAppliance() OptNosqlNodeAppliance {
+	return s.Appliance
+}
+
+// SetAppliance sets the value of Appliance.
+func (s *NosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes) SetAppliance(val OptNosqlNodeAppliance) {
+	s.Appliance = val
 }
 
 // Ref: #/components/schemas/NosqlSuccessResponse
@@ -2944,9 +5446,11 @@ func (s *NosqlUpdateRequest) SetAppliance(val NosqlUpdateRequestAppliance) {
 
 // Merged schema.
 type NosqlUpdateRequestAppliance struct {
-	// クラス.
+	// クラス
+	// **新規作成時・ノード追加時必須**.
 	Class OptString `json:"Class"`
-	// NoSQLの名前.
+	// NoSQLの名前
+	// **新規作成時・ノード追加時必須**.
 	Name OptString `json:"Name"`
 	// NoSQLの説明.
 	Description OptString  `json:"Description"`
@@ -3021,8 +5525,14 @@ type NosqlUpdateRequestApplianceSettings struct {
 	// バックアップ情報.
 	Backup OptNilNosqlUpdateRequestApplianceSettingsBackup `json:"Backup"`
 	// 送信元ネットワークアドレス.
-	SourceNetwork []string    `json:"SourceNetwork"`
-	Password      OptPassword `json:"Password:"`
+	SourceNetwork []string `json:"SourceNetwork"`
+	// 予備IPアドレス
+	// **新規作成時必須**
+	// ※デッドノード発生時、ノード切替を行う際に使用する予備のIPアドレス.
+	ReserveIPAddress OptIPv4 `json:"ReserveIPAddress"`
+	// 定期リペア設定.
+	Repair   OptNilNosqlUpdateRequestApplianceSettingsRepair `json:"Repair"`
+	Password OptPassword                                     `json:"Password"`
 }
 
 // GetBackup returns the value of Backup.
@@ -3033,6 +5543,16 @@ func (s *NosqlUpdateRequestApplianceSettings) GetBackup() OptNilNosqlUpdateReque
 // GetSourceNetwork returns the value of SourceNetwork.
 func (s *NosqlUpdateRequestApplianceSettings) GetSourceNetwork() []string {
 	return s.SourceNetwork
+}
+
+// GetReserveIPAddress returns the value of ReserveIPAddress.
+func (s *NosqlUpdateRequestApplianceSettings) GetReserveIPAddress() OptIPv4 {
+	return s.ReserveIPAddress
+}
+
+// GetRepair returns the value of Repair.
+func (s *NosqlUpdateRequestApplianceSettings) GetRepair() OptNilNosqlUpdateRequestApplianceSettingsRepair {
+	return s.Repair
 }
 
 // GetPassword returns the value of Password.
@@ -3048,6 +5568,16 @@ func (s *NosqlUpdateRequestApplianceSettings) SetBackup(val OptNilNosqlUpdateReq
 // SetSourceNetwork sets the value of SourceNetwork.
 func (s *NosqlUpdateRequestApplianceSettings) SetSourceNetwork(val []string) {
 	s.SourceNetwork = val
+}
+
+// SetReserveIPAddress sets the value of ReserveIPAddress.
+func (s *NosqlUpdateRequestApplianceSettings) SetReserveIPAddress(val OptIPv4) {
+	s.ReserveIPAddress = val
+}
+
+// SetRepair sets the value of Repair.
+func (s *NosqlUpdateRequestApplianceSettings) SetRepair(val OptNilNosqlUpdateRequestApplianceSettingsRepair) {
+	s.Repair = val
 }
 
 // SetPassword sets the value of Password.
@@ -3183,6 +5713,390 @@ func (s *NosqlUpdateRequestApplianceSettingsBackupDayOfWeekItem) UnmarshalText(d
 	}
 }
 
+// 定期リペア設定.
+type NosqlUpdateRequestApplianceSettingsRepair struct {
+	// 増分リペア設定.
+	Incremental OptNosqlUpdateRequestApplianceSettingsRepairIncremental `json:"Incremental"`
+	// 完全リペア設定.
+	Full OptNosqlUpdateRequestApplianceSettingsRepairFull `json:"Full"`
+}
+
+// GetIncremental returns the value of Incremental.
+func (s *NosqlUpdateRequestApplianceSettingsRepair) GetIncremental() OptNosqlUpdateRequestApplianceSettingsRepairIncremental {
+	return s.Incremental
+}
+
+// GetFull returns the value of Full.
+func (s *NosqlUpdateRequestApplianceSettingsRepair) GetFull() OptNosqlUpdateRequestApplianceSettingsRepairFull {
+	return s.Full
+}
+
+// SetIncremental sets the value of Incremental.
+func (s *NosqlUpdateRequestApplianceSettingsRepair) SetIncremental(val OptNosqlUpdateRequestApplianceSettingsRepairIncremental) {
+	s.Incremental = val
+}
+
+// SetFull sets the value of Full.
+func (s *NosqlUpdateRequestApplianceSettingsRepair) SetFull(val OptNosqlUpdateRequestApplianceSettingsRepairFull) {
+	s.Full = val
+}
+
+// 完全リペア設定.
+type NosqlUpdateRequestApplianceSettingsRepairFull struct {
+	// 7日ごとの実行間隔（日数）.
+	Interval NosqlUpdateRequestApplianceSettingsRepairFullInterval `json:"Interval"`
+	// 実行曜日.
+	DayOfWeek NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek `json:"DayOfWeek"`
+	// 実行時間.
+	Time string `json:"Time"`
+}
+
+// GetInterval returns the value of Interval.
+func (s *NosqlUpdateRequestApplianceSettingsRepairFull) GetInterval() NosqlUpdateRequestApplianceSettingsRepairFullInterval {
+	return s.Interval
+}
+
+// GetDayOfWeek returns the value of DayOfWeek.
+func (s *NosqlUpdateRequestApplianceSettingsRepairFull) GetDayOfWeek() NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek {
+	return s.DayOfWeek
+}
+
+// GetTime returns the value of Time.
+func (s *NosqlUpdateRequestApplianceSettingsRepairFull) GetTime() string {
+	return s.Time
+}
+
+// SetInterval sets the value of Interval.
+func (s *NosqlUpdateRequestApplianceSettingsRepairFull) SetInterval(val NosqlUpdateRequestApplianceSettingsRepairFullInterval) {
+	s.Interval = val
+}
+
+// SetDayOfWeek sets the value of DayOfWeek.
+func (s *NosqlUpdateRequestApplianceSettingsRepairFull) SetDayOfWeek(val NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek) {
+	s.DayOfWeek = val
+}
+
+// SetTime sets the value of Time.
+func (s *NosqlUpdateRequestApplianceSettingsRepairFull) SetTime(val string) {
+	s.Time = val
+}
+
+// 実行曜日.
+type NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek string
+
+const (
+	NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekSun NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek = "sun"
+	NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekMon NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek = "mon"
+	NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekTue NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek = "tue"
+	NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekWed NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek = "wed"
+	NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekThu NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek = "thu"
+	NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekFri NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek = "fri"
+	NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekSat NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek = "sat"
+)
+
+// AllValues returns all NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek values.
+func (NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek) AllValues() []NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek {
+	return []NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek{
+		NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekSun,
+		NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekMon,
+		NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekTue,
+		NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekWed,
+		NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekThu,
+		NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekFri,
+		NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekSat,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek) MarshalText() ([]byte, error) {
+	switch s {
+	case NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekSun:
+		return []byte(s), nil
+	case NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekMon:
+		return []byte(s), nil
+	case NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekTue:
+		return []byte(s), nil
+	case NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekWed:
+		return []byte(s), nil
+	case NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekThu:
+		return []byte(s), nil
+	case NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekFri:
+		return []byte(s), nil
+	case NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekSat:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek) UnmarshalText(data []byte) error {
+	switch NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeek(data) {
+	case NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekSun:
+		*s = NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekSun
+		return nil
+	case NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekMon:
+		*s = NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekMon
+		return nil
+	case NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekTue:
+		*s = NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekTue
+		return nil
+	case NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekWed:
+		*s = NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekWed
+		return nil
+	case NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekThu:
+		*s = NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekThu
+		return nil
+	case NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekFri:
+		*s = NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekFri
+		return nil
+	case NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekSat:
+		*s = NosqlUpdateRequestApplianceSettingsRepairFullDayOfWeekSat
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// 7日ごとの実行間隔（日数）.
+type NosqlUpdateRequestApplianceSettingsRepairFullInterval int
+
+const (
+	NosqlUpdateRequestApplianceSettingsRepairFullInterval7  NosqlUpdateRequestApplianceSettingsRepairFullInterval = 7
+	NosqlUpdateRequestApplianceSettingsRepairFullInterval14 NosqlUpdateRequestApplianceSettingsRepairFullInterval = 14
+	NosqlUpdateRequestApplianceSettingsRepairFullInterval21 NosqlUpdateRequestApplianceSettingsRepairFullInterval = 21
+	NosqlUpdateRequestApplianceSettingsRepairFullInterval28 NosqlUpdateRequestApplianceSettingsRepairFullInterval = 28
+)
+
+// AllValues returns all NosqlUpdateRequestApplianceSettingsRepairFullInterval values.
+func (NosqlUpdateRequestApplianceSettingsRepairFullInterval) AllValues() []NosqlUpdateRequestApplianceSettingsRepairFullInterval {
+	return []NosqlUpdateRequestApplianceSettingsRepairFullInterval{
+		NosqlUpdateRequestApplianceSettingsRepairFullInterval7,
+		NosqlUpdateRequestApplianceSettingsRepairFullInterval14,
+		NosqlUpdateRequestApplianceSettingsRepairFullInterval21,
+		NosqlUpdateRequestApplianceSettingsRepairFullInterval28,
+	}
+}
+
+// 増分リペア設定.
+type NosqlUpdateRequestApplianceSettingsRepairIncremental struct {
+	// 実行曜日.
+	DaysOfWeek []NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem `json:"DaysOfWeek"`
+	// 実行時間.
+	Time string `json:"Time"`
+}
+
+// GetDaysOfWeek returns the value of DaysOfWeek.
+func (s *NosqlUpdateRequestApplianceSettingsRepairIncremental) GetDaysOfWeek() []NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem {
+	return s.DaysOfWeek
+}
+
+// GetTime returns the value of Time.
+func (s *NosqlUpdateRequestApplianceSettingsRepairIncremental) GetTime() string {
+	return s.Time
+}
+
+// SetDaysOfWeek sets the value of DaysOfWeek.
+func (s *NosqlUpdateRequestApplianceSettingsRepairIncremental) SetDaysOfWeek(val []NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem) {
+	s.DaysOfWeek = val
+}
+
+// SetTime sets the value of Time.
+func (s *NosqlUpdateRequestApplianceSettingsRepairIncremental) SetTime(val string) {
+	s.Time = val
+}
+
+type NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem string
+
+const (
+	NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSun NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem = "sun"
+	NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemMon NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem = "mon"
+	NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemTue NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem = "tue"
+	NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemWed NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem = "wed"
+	NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemThu NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem = "thu"
+	NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemFri NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem = "fri"
+	NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSat NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem = "sat"
+)
+
+// AllValues returns all NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem values.
+func (NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem) AllValues() []NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem {
+	return []NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem{
+		NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSun,
+		NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemMon,
+		NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemTue,
+		NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemWed,
+		NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemThu,
+		NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemFri,
+		NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSat,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem) MarshalText() ([]byte, error) {
+	switch s {
+	case NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSun:
+		return []byte(s), nil
+	case NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemMon:
+		return []byte(s), nil
+	case NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemTue:
+		return []byte(s), nil
+	case NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemWed:
+		return []byte(s), nil
+	case NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemThu:
+		return []byte(s), nil
+	case NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemFri:
+		return []byte(s), nil
+	case NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSat:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem) UnmarshalText(data []byte) error {
+	switch NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItem(data) {
+	case NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSun:
+		*s = NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSun
+		return nil
+	case NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemMon:
+		*s = NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemMon
+		return nil
+	case NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemTue:
+		*s = NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemTue
+		return nil
+	case NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemWed:
+		*s = NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemWed
+		return nil
+	case NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemThu:
+		*s = NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemThu
+		return nil
+	case NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemFri:
+		*s = NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemFri
+		return nil
+	case NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSat:
+		*s = NosqlUpdateRequestApplianceSettingsRepairIncrementalDaysOfWeekItemSat
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/NosqlVersion
+type NosqlVersion struct {
+	// NoSQLの更新可能なバージョン.
+	Version OptString `json:"version"`
+}
+
+// GetVersion returns the value of Version.
+func (s *NosqlVersion) GetVersion() OptString {
+	return s.Version
+}
+
+// SetVersion sets the value of Version.
+func (s *NosqlVersion) SetVersion(val OptString) {
+	s.Version = val
+}
+
+// Ref: #/components/schemas/NosqldbNodeStatus
+type NosqldbNodeStatus struct {
+	// ノードの通番.
+	Index OptInt `json:"Index"`
+	// ユーザ側スイッチに接続するIPアドレス.
+	UserIPAddress OptIPv4 `json:"UserIPAddress"`
+	// ノードタイプ
+	// | 値 | 説明         |
+	// |----|--------------|
+	// | 0  | 正常         |
+	// | 1  | デッドノード |
+	// | 2  | 予備IPサーバ |.
+	NodeType OptNosqldbNodeStatusNodeType `json:"NodeType"`
+}
+
+// GetIndex returns the value of Index.
+func (s *NosqldbNodeStatus) GetIndex() OptInt {
+	return s.Index
+}
+
+// GetUserIPAddress returns the value of UserIPAddress.
+func (s *NosqldbNodeStatus) GetUserIPAddress() OptIPv4 {
+	return s.UserIPAddress
+}
+
+// GetNodeType returns the value of NodeType.
+func (s *NosqldbNodeStatus) GetNodeType() OptNosqldbNodeStatusNodeType {
+	return s.NodeType
+}
+
+// SetIndex sets the value of Index.
+func (s *NosqldbNodeStatus) SetIndex(val OptInt) {
+	s.Index = val
+}
+
+// SetUserIPAddress sets the value of UserIPAddress.
+func (s *NosqldbNodeStatus) SetUserIPAddress(val OptIPv4) {
+	s.UserIPAddress = val
+}
+
+// SetNodeType sets the value of NodeType.
+func (s *NosqldbNodeStatus) SetNodeType(val OptNosqldbNodeStatusNodeType) {
+	s.NodeType = val
+}
+
+// ノードタイプ
+// | 値 | 説明         |
+// |----|--------------|
+// | 0  | 正常         |
+// | 1  | デッドノード |
+// | 2  | 予備IPサーバ |.
+type NosqldbNodeStatusNodeType string
+
+const (
+	NosqldbNodeStatusNodeType0 NosqldbNodeStatusNodeType = "0"
+	NosqldbNodeStatusNodeType1 NosqldbNodeStatusNodeType = "1"
+	NosqldbNodeStatusNodeType2 NosqldbNodeStatusNodeType = "2"
+)
+
+// AllValues returns all NosqldbNodeStatusNodeType values.
+func (NosqldbNodeStatusNodeType) AllValues() []NosqldbNodeStatusNodeType {
+	return []NosqldbNodeStatusNodeType{
+		NosqldbNodeStatusNodeType0,
+		NosqldbNodeStatusNodeType1,
+		NosqldbNodeStatusNodeType2,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NosqldbNodeStatusNodeType) MarshalText() ([]byte, error) {
+	switch s {
+	case NosqldbNodeStatusNodeType0:
+		return []byte(s), nil
+	case NosqldbNodeStatusNodeType1:
+		return []byte(s), nil
+	case NosqldbNodeStatusNodeType2:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NosqldbNodeStatusNodeType) UnmarshalText(data []byte) error {
+	switch NosqldbNodeStatusNodeType(data) {
+	case NosqldbNodeStatusNodeType0:
+		*s = NosqldbNodeStatusNodeType0
+		return nil
+	case NosqldbNodeStatusNodeType1:
+		*s = NosqldbNodeStatusNodeType1
+		return nil
+	case NosqldbNodeStatusNodeType2:
+		*s = NosqldbNodeStatusNodeType2
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // エラーレスポンス.
 type NotFoundResponse struct {
 	// エラーのレスポンス(true:エラー).
@@ -3250,8 +6164,12 @@ func (s *NotFoundResponse) SetErrorMsg(val OptString) {
 func (*NotFoundResponse) createBackupRes()         {}
 func (*NotFoundResponse) deleteAppliancePowerRes() {}
 func (*NotFoundResponse) deleteBackupRes()         {}
+func (*NotFoundResponse) deleteDBRes()             {}
 func (*NotFoundResponse) getDBRes()                {}
+func (*NotFoundResponse) getNoSQLNodeHealthRes()   {}
+func (*NotFoundResponse) postNoSQLRepairRes()      {}
 func (*NotFoundResponse) putAppliancePowerRes()    {}
+func (*NotFoundResponse) recoverNoSQLNodeRes()     {}
 func (*NotFoundResponse) restoreBackupRes()        {}
 func (*NotFoundResponse) updateDBRes()             {}
 
@@ -3393,6 +6311,834 @@ func (o OptDateTime) Or(d time.Time) time.Time {
 	return d
 }
 
+// NewOptGetNosqlApplianceInterfacesItemSwitch returns new OptGetNosqlApplianceInterfacesItemSwitch with value set to v.
+func NewOptGetNosqlApplianceInterfacesItemSwitch(v GetNosqlApplianceInterfacesItemSwitch) OptGetNosqlApplianceInterfacesItemSwitch {
+	return OptGetNosqlApplianceInterfacesItemSwitch{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlApplianceInterfacesItemSwitch is optional GetNosqlApplianceInterfacesItemSwitch.
+type OptGetNosqlApplianceInterfacesItemSwitch struct {
+	Value GetNosqlApplianceInterfacesItemSwitch
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlApplianceInterfacesItemSwitch was set.
+func (o OptGetNosqlApplianceInterfacesItemSwitch) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlApplianceInterfacesItemSwitch) Reset() {
+	var v GetNosqlApplianceInterfacesItemSwitch
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlApplianceInterfacesItemSwitch) SetTo(v GetNosqlApplianceInterfacesItemSwitch) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlApplianceInterfacesItemSwitch) Get() (v GetNosqlApplianceInterfacesItemSwitch, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlApplianceInterfacesItemSwitch) Or(d GetNosqlApplianceInterfacesItemSwitch) GetNosqlApplianceInterfacesItemSwitch {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlApplianceInterfacesItemSwitchSubnetInternet returns new OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet with value set to v.
+func NewOptGetNosqlApplianceInterfacesItemSwitchSubnetInternet(v GetNosqlApplianceInterfacesItemSwitchSubnetInternet) OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet {
+	return OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet is optional GetNosqlApplianceInterfacesItemSwitchSubnetInternet.
+type OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet struct {
+	Value GetNosqlApplianceInterfacesItemSwitchSubnetInternet
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet was set.
+func (o OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet) Reset() {
+	var v GetNosqlApplianceInterfacesItemSwitchSubnetInternet
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet) SetTo(v GetNosqlApplianceInterfacesItemSwitchSubnetInternet) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet) Get() (v GetNosqlApplianceInterfacesItemSwitchSubnetInternet, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet) Or(d GetNosqlApplianceInterfacesItemSwitchSubnetInternet) GetNosqlApplianceInterfacesItemSwitchSubnetInternet {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlApplianceRemark returns new OptGetNosqlApplianceRemark with value set to v.
+func NewOptGetNosqlApplianceRemark(v GetNosqlApplianceRemark) OptGetNosqlApplianceRemark {
+	return OptGetNosqlApplianceRemark{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlApplianceRemark is optional GetNosqlApplianceRemark.
+type OptGetNosqlApplianceRemark struct {
+	Value GetNosqlApplianceRemark
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlApplianceRemark was set.
+func (o OptGetNosqlApplianceRemark) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlApplianceRemark) Reset() {
+	var v GetNosqlApplianceRemark
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlApplianceRemark) SetTo(v GetNosqlApplianceRemark) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlApplianceRemark) Get() (v GetNosqlApplianceRemark, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlApplianceRemark) Or(d GetNosqlApplianceRemark) GetNosqlApplianceRemark {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlApplianceRemarkNosql returns new OptGetNosqlApplianceRemarkNosql with value set to v.
+func NewOptGetNosqlApplianceRemarkNosql(v GetNosqlApplianceRemarkNosql) OptGetNosqlApplianceRemarkNosql {
+	return OptGetNosqlApplianceRemarkNosql{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlApplianceRemarkNosql is optional GetNosqlApplianceRemarkNosql.
+type OptGetNosqlApplianceRemarkNosql struct {
+	Value GetNosqlApplianceRemarkNosql
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlApplianceRemarkNosql was set.
+func (o OptGetNosqlApplianceRemarkNosql) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlApplianceRemarkNosql) Reset() {
+	var v GetNosqlApplianceRemarkNosql
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlApplianceRemarkNosql) SetTo(v GetNosqlApplianceRemarkNosql) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlApplianceRemarkNosql) Get() (v GetNosqlApplianceRemarkNosql, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlApplianceRemarkNosql) Or(d GetNosqlApplianceRemarkNosql) GetNosqlApplianceRemarkNosql {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlApplianceRemarkNosqlDatabaseEngine returns new OptGetNosqlApplianceRemarkNosqlDatabaseEngine with value set to v.
+func NewOptGetNosqlApplianceRemarkNosqlDatabaseEngine(v GetNosqlApplianceRemarkNosqlDatabaseEngine) OptGetNosqlApplianceRemarkNosqlDatabaseEngine {
+	return OptGetNosqlApplianceRemarkNosqlDatabaseEngine{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlApplianceRemarkNosqlDatabaseEngine is optional GetNosqlApplianceRemarkNosqlDatabaseEngine.
+type OptGetNosqlApplianceRemarkNosqlDatabaseEngine struct {
+	Value GetNosqlApplianceRemarkNosqlDatabaseEngine
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlApplianceRemarkNosqlDatabaseEngine was set.
+func (o OptGetNosqlApplianceRemarkNosqlDatabaseEngine) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlApplianceRemarkNosqlDatabaseEngine) Reset() {
+	var v GetNosqlApplianceRemarkNosqlDatabaseEngine
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlApplianceRemarkNosqlDatabaseEngine) SetTo(v GetNosqlApplianceRemarkNosqlDatabaseEngine) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlApplianceRemarkNosqlDatabaseEngine) Get() (v GetNosqlApplianceRemarkNosqlDatabaseEngine, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlApplianceRemarkNosqlDatabaseEngine) Or(d GetNosqlApplianceRemarkNosqlDatabaseEngine) GetNosqlApplianceRemarkNosqlDatabaseEngine {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlApplianceRemarkNosqlDiskSize returns new OptGetNosqlApplianceRemarkNosqlDiskSize with value set to v.
+func NewOptGetNosqlApplianceRemarkNosqlDiskSize(v GetNosqlApplianceRemarkNosqlDiskSize) OptGetNosqlApplianceRemarkNosqlDiskSize {
+	return OptGetNosqlApplianceRemarkNosqlDiskSize{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlApplianceRemarkNosqlDiskSize is optional GetNosqlApplianceRemarkNosqlDiskSize.
+type OptGetNosqlApplianceRemarkNosqlDiskSize struct {
+	Value GetNosqlApplianceRemarkNosqlDiskSize
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlApplianceRemarkNosqlDiskSize was set.
+func (o OptGetNosqlApplianceRemarkNosqlDiskSize) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlApplianceRemarkNosqlDiskSize) Reset() {
+	var v GetNosqlApplianceRemarkNosqlDiskSize
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlApplianceRemarkNosqlDiskSize) SetTo(v GetNosqlApplianceRemarkNosqlDiskSize) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlApplianceRemarkNosqlDiskSize) Get() (v GetNosqlApplianceRemarkNosqlDiskSize, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlApplianceRemarkNosqlDiskSize) Or(d GetNosqlApplianceRemarkNosqlDiskSize) GetNosqlApplianceRemarkNosqlDiskSize {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlApplianceRemarkNosqlMemory returns new OptGetNosqlApplianceRemarkNosqlMemory with value set to v.
+func NewOptGetNosqlApplianceRemarkNosqlMemory(v GetNosqlApplianceRemarkNosqlMemory) OptGetNosqlApplianceRemarkNosqlMemory {
+	return OptGetNosqlApplianceRemarkNosqlMemory{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlApplianceRemarkNosqlMemory is optional GetNosqlApplianceRemarkNosqlMemory.
+type OptGetNosqlApplianceRemarkNosqlMemory struct {
+	Value GetNosqlApplianceRemarkNosqlMemory
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlApplianceRemarkNosqlMemory was set.
+func (o OptGetNosqlApplianceRemarkNosqlMemory) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlApplianceRemarkNosqlMemory) Reset() {
+	var v GetNosqlApplianceRemarkNosqlMemory
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlApplianceRemarkNosqlMemory) SetTo(v GetNosqlApplianceRemarkNosqlMemory) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlApplianceRemarkNosqlMemory) Get() (v GetNosqlApplianceRemarkNosqlMemory, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlApplianceRemarkNosqlMemory) Or(d GetNosqlApplianceRemarkNosqlMemory) GetNosqlApplianceRemarkNosqlMemory {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlApplianceRemarkNosqlPrimaryNodes returns new OptGetNosqlApplianceRemarkNosqlPrimaryNodes with value set to v.
+func NewOptGetNosqlApplianceRemarkNosqlPrimaryNodes(v GetNosqlApplianceRemarkNosqlPrimaryNodes) OptGetNosqlApplianceRemarkNosqlPrimaryNodes {
+	return OptGetNosqlApplianceRemarkNosqlPrimaryNodes{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlApplianceRemarkNosqlPrimaryNodes is optional GetNosqlApplianceRemarkNosqlPrimaryNodes.
+type OptGetNosqlApplianceRemarkNosqlPrimaryNodes struct {
+	Value GetNosqlApplianceRemarkNosqlPrimaryNodes
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlApplianceRemarkNosqlPrimaryNodes was set.
+func (o OptGetNosqlApplianceRemarkNosqlPrimaryNodes) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlApplianceRemarkNosqlPrimaryNodes) Reset() {
+	var v GetNosqlApplianceRemarkNosqlPrimaryNodes
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlApplianceRemarkNosqlPrimaryNodes) SetTo(v GetNosqlApplianceRemarkNosqlPrimaryNodes) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlApplianceRemarkNosqlPrimaryNodes) Get() (v GetNosqlApplianceRemarkNosqlPrimaryNodes, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlApplianceRemarkNosqlPrimaryNodes) Or(d GetNosqlApplianceRemarkNosqlPrimaryNodes) GetNosqlApplianceRemarkNosqlPrimaryNodes {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance returns new OptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance with value set to v.
+func NewOptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance(v GetNosqlApplianceRemarkNosqlPrimaryNodesAppliance) OptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance {
+	return OptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance is optional GetNosqlApplianceRemarkNosqlPrimaryNodesAppliance.
+type OptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance struct {
+	Value GetNosqlApplianceRemarkNosqlPrimaryNodesAppliance
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance was set.
+func (o OptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance) Reset() {
+	var v GetNosqlApplianceRemarkNosqlPrimaryNodesAppliance
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance) SetTo(v GetNosqlApplianceRemarkNosqlPrimaryNodesAppliance) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance) Get() (v GetNosqlApplianceRemarkNosqlPrimaryNodesAppliance, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlApplianceRemarkNosqlPrimaryNodesAppliance) Or(d GetNosqlApplianceRemarkNosqlPrimaryNodesAppliance) GetNosqlApplianceRemarkNosqlPrimaryNodesAppliance {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone returns new OptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone with value set to v.
+func NewOptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone(v GetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone) OptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone {
+	return OptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone is optional GetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone.
+type OptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone struct {
+	Value GetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone was set.
+func (o OptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone) Reset() {
+	var v GetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone) SetTo(v GetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone) Get() (v GetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone) Or(d GetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone) GetNosqlApplianceRemarkNosqlPrimaryNodesApplianceZone {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlApplianceRemarkNosqlStorage returns new OptGetNosqlApplianceRemarkNosqlStorage with value set to v.
+func NewOptGetNosqlApplianceRemarkNosqlStorage(v GetNosqlApplianceRemarkNosqlStorage) OptGetNosqlApplianceRemarkNosqlStorage {
+	return OptGetNosqlApplianceRemarkNosqlStorage{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlApplianceRemarkNosqlStorage is optional GetNosqlApplianceRemarkNosqlStorage.
+type OptGetNosqlApplianceRemarkNosqlStorage struct {
+	Value GetNosqlApplianceRemarkNosqlStorage
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlApplianceRemarkNosqlStorage was set.
+func (o OptGetNosqlApplianceRemarkNosqlStorage) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlApplianceRemarkNosqlStorage) Reset() {
+	var v GetNosqlApplianceRemarkNosqlStorage
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlApplianceRemarkNosqlStorage) SetTo(v GetNosqlApplianceRemarkNosqlStorage) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlApplianceRemarkNosqlStorage) Get() (v GetNosqlApplianceRemarkNosqlStorage, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlApplianceRemarkNosqlStorage) Or(d GetNosqlApplianceRemarkNosqlStorage) GetNosqlApplianceRemarkNosqlStorage {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlApplianceRemarkNosqlVirtualcore returns new OptGetNosqlApplianceRemarkNosqlVirtualcore with value set to v.
+func NewOptGetNosqlApplianceRemarkNosqlVirtualcore(v GetNosqlApplianceRemarkNosqlVirtualcore) OptGetNosqlApplianceRemarkNosqlVirtualcore {
+	return OptGetNosqlApplianceRemarkNosqlVirtualcore{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlApplianceRemarkNosqlVirtualcore is optional GetNosqlApplianceRemarkNosqlVirtualcore.
+type OptGetNosqlApplianceRemarkNosqlVirtualcore struct {
+	Value GetNosqlApplianceRemarkNosqlVirtualcore
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlApplianceRemarkNosqlVirtualcore was set.
+func (o OptGetNosqlApplianceRemarkNosqlVirtualcore) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlApplianceRemarkNosqlVirtualcore) Reset() {
+	var v GetNosqlApplianceRemarkNosqlVirtualcore
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlApplianceRemarkNosqlVirtualcore) SetTo(v GetNosqlApplianceRemarkNosqlVirtualcore) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlApplianceRemarkNosqlVirtualcore) Get() (v GetNosqlApplianceRemarkNosqlVirtualcore, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlApplianceRemarkNosqlVirtualcore) Or(d GetNosqlApplianceRemarkNosqlVirtualcore) GetNosqlApplianceRemarkNosqlVirtualcore {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlApplianceRemarkZone returns new OptGetNosqlApplianceRemarkZone with value set to v.
+func NewOptGetNosqlApplianceRemarkZone(v GetNosqlApplianceRemarkZone) OptGetNosqlApplianceRemarkZone {
+	return OptGetNosqlApplianceRemarkZone{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlApplianceRemarkZone is optional GetNosqlApplianceRemarkZone.
+type OptGetNosqlApplianceRemarkZone struct {
+	Value GetNosqlApplianceRemarkZone
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlApplianceRemarkZone was set.
+func (o OptGetNosqlApplianceRemarkZone) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlApplianceRemarkZone) Reset() {
+	var v GetNosqlApplianceRemarkZone
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlApplianceRemarkZone) SetTo(v GetNosqlApplianceRemarkZone) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlApplianceRemarkZone) Get() (v GetNosqlApplianceRemarkZone, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlApplianceRemarkZone) Or(d GetNosqlApplianceRemarkZone) GetNosqlApplianceRemarkZone {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlSettings returns new OptGetNosqlSettings with value set to v.
+func NewOptGetNosqlSettings(v GetNosqlSettings) OptGetNosqlSettings {
+	return OptGetNosqlSettings{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlSettings is optional GetNosqlSettings.
+type OptGetNosqlSettings struct {
+	Value GetNosqlSettings
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlSettings was set.
+func (o OptGetNosqlSettings) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlSettings) Reset() {
+	var v GetNosqlSettings
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlSettings) SetTo(v GetNosqlSettings) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlSettings) Get() (v GetNosqlSettings, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlSettings) Or(d GetNosqlSettings) GetNosqlSettings {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlSettingsRepairFull returns new OptGetNosqlSettingsRepairFull with value set to v.
+func NewOptGetNosqlSettingsRepairFull(v GetNosqlSettingsRepairFull) OptGetNosqlSettingsRepairFull {
+	return OptGetNosqlSettingsRepairFull{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlSettingsRepairFull is optional GetNosqlSettingsRepairFull.
+type OptGetNosqlSettingsRepairFull struct {
+	Value GetNosqlSettingsRepairFull
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlSettingsRepairFull was set.
+func (o OptGetNosqlSettingsRepairFull) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlSettingsRepairFull) Reset() {
+	var v GetNosqlSettingsRepairFull
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlSettingsRepairFull) SetTo(v GetNosqlSettingsRepairFull) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlSettingsRepairFull) Get() (v GetNosqlSettingsRepairFull, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlSettingsRepairFull) Or(d GetNosqlSettingsRepairFull) GetNosqlSettingsRepairFull {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlSettingsRepairFullDayOfWeek returns new OptGetNosqlSettingsRepairFullDayOfWeek with value set to v.
+func NewOptGetNosqlSettingsRepairFullDayOfWeek(v GetNosqlSettingsRepairFullDayOfWeek) OptGetNosqlSettingsRepairFullDayOfWeek {
+	return OptGetNosqlSettingsRepairFullDayOfWeek{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlSettingsRepairFullDayOfWeek is optional GetNosqlSettingsRepairFullDayOfWeek.
+type OptGetNosqlSettingsRepairFullDayOfWeek struct {
+	Value GetNosqlSettingsRepairFullDayOfWeek
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlSettingsRepairFullDayOfWeek was set.
+func (o OptGetNosqlSettingsRepairFullDayOfWeek) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlSettingsRepairFullDayOfWeek) Reset() {
+	var v GetNosqlSettingsRepairFullDayOfWeek
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlSettingsRepairFullDayOfWeek) SetTo(v GetNosqlSettingsRepairFullDayOfWeek) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlSettingsRepairFullDayOfWeek) Get() (v GetNosqlSettingsRepairFullDayOfWeek, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlSettingsRepairFullDayOfWeek) Or(d GetNosqlSettingsRepairFullDayOfWeek) GetNosqlSettingsRepairFullDayOfWeek {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlSettingsRepairFullInterval returns new OptGetNosqlSettingsRepairFullInterval with value set to v.
+func NewOptGetNosqlSettingsRepairFullInterval(v GetNosqlSettingsRepairFullInterval) OptGetNosqlSettingsRepairFullInterval {
+	return OptGetNosqlSettingsRepairFullInterval{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlSettingsRepairFullInterval is optional GetNosqlSettingsRepairFullInterval.
+type OptGetNosqlSettingsRepairFullInterval struct {
+	Value GetNosqlSettingsRepairFullInterval
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlSettingsRepairFullInterval was set.
+func (o OptGetNosqlSettingsRepairFullInterval) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlSettingsRepairFullInterval) Reset() {
+	var v GetNosqlSettingsRepairFullInterval
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlSettingsRepairFullInterval) SetTo(v GetNosqlSettingsRepairFullInterval) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlSettingsRepairFullInterval) Get() (v GetNosqlSettingsRepairFullInterval, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlSettingsRepairFullInterval) Or(d GetNosqlSettingsRepairFullInterval) GetNosqlSettingsRepairFullInterval {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlSettingsRepairIncremental returns new OptGetNosqlSettingsRepairIncremental with value set to v.
+func NewOptGetNosqlSettingsRepairIncremental(v GetNosqlSettingsRepairIncremental) OptGetNosqlSettingsRepairIncremental {
+	return OptGetNosqlSettingsRepairIncremental{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlSettingsRepairIncremental is optional GetNosqlSettingsRepairIncremental.
+type OptGetNosqlSettingsRepairIncremental struct {
+	Value GetNosqlSettingsRepairIncremental
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlSettingsRepairIncremental was set.
+func (o OptGetNosqlSettingsRepairIncremental) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlSettingsRepairIncremental) Reset() {
+	var v GetNosqlSettingsRepairIncremental
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlSettingsRepairIncremental) SetTo(v GetNosqlSettingsRepairIncremental) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlSettingsRepairIncremental) Get() (v GetNosqlSettingsRepairIncremental, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlSettingsRepairIncremental) Or(d GetNosqlSettingsRepairIncremental) GetNosqlSettingsRepairIncremental {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptGetParameterResponseNosql returns new OptGetParameterResponseNosql with value set to v.
 func NewOptGetParameterResponseNosql(v GetParameterResponseNosql) OptGetParameterResponseNosql {
 	return OptGetParameterResponseNosql{
@@ -3433,6 +7179,98 @@ func (o OptGetParameterResponseNosql) Get() (v GetParameterResponseNosql, ok boo
 
 // Or returns value if set, or given parameter if does not.
 func (o OptGetParameterResponseNosql) Or(d GetParameterResponseNosql) GetParameterResponseNosql {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetPlan returns new OptGetPlan with value set to v.
+func NewOptGetPlan(v GetPlan) OptGetPlan {
+	return OptGetPlan{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetPlan is optional GetPlan.
+type OptGetPlan struct {
+	Value GetPlan
+	Set   bool
+}
+
+// IsSet returns true if OptGetPlan was set.
+func (o OptGetPlan) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetPlan) Reset() {
+	var v GetPlan
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetPlan) SetTo(v GetPlan) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetPlan) Get() (v GetPlan, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetPlan) Or(d GetPlan) GetPlan {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetServiceClass returns new OptGetServiceClass with value set to v.
+func NewOptGetServiceClass(v GetServiceClass) OptGetServiceClass {
+	return OptGetServiceClass{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetServiceClass is optional GetServiceClass.
+type OptGetServiceClass struct {
+	Value GetServiceClass
+	Set   bool
+}
+
+// IsSet returns true if OptGetServiceClass was set.
+func (o OptGetServiceClass) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetServiceClass) Reset() {
+	var v GetServiceClass
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetServiceClass) SetTo(v GetServiceClass) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetServiceClass) Get() (v GetServiceClass, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetServiceClass) Or(d GetServiceClass) GetServiceClass {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -3617,6 +7455,510 @@ func (o OptIsOk) Get() (v IsOk, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptIsOk) Or(d IsOk) IsOk {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilDateTime returns new OptNilDateTime with value set to v.
+func NewOptNilDateTime(v time.Time) OptNilDateTime {
+	return OptNilDateTime{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilDateTime is optional nullable time.Time.
+type OptNilDateTime struct {
+	Value time.Time
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilDateTime was set.
+func (o OptNilDateTime) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilDateTime) Reset() {
+	var v time.Time
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilDateTime) SetTo(v time.Time) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilDateTime) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilDateTime) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v time.Time
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilDateTime) Get() (v time.Time, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilGetNosqlApplianceDisk returns new OptNilGetNosqlApplianceDisk with value set to v.
+func NewOptNilGetNosqlApplianceDisk(v GetNosqlApplianceDisk) OptNilGetNosqlApplianceDisk {
+	return OptNilGetNosqlApplianceDisk{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilGetNosqlApplianceDisk is optional nullable GetNosqlApplianceDisk.
+type OptNilGetNosqlApplianceDisk struct {
+	Value GetNosqlApplianceDisk
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilGetNosqlApplianceDisk was set.
+func (o OptNilGetNosqlApplianceDisk) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilGetNosqlApplianceDisk) Reset() {
+	var v GetNosqlApplianceDisk
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilGetNosqlApplianceDisk) SetTo(v GetNosqlApplianceDisk) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilGetNosqlApplianceDisk) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilGetNosqlApplianceDisk) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v GetNosqlApplianceDisk
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilGetNosqlApplianceDisk) Get() (v GetNosqlApplianceDisk, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilGetNosqlApplianceDisk) Or(d GetNosqlApplianceDisk) GetNosqlApplianceDisk {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilGetNosqlApplianceDiskEncryptionKey returns new OptNilGetNosqlApplianceDiskEncryptionKey with value set to v.
+func NewOptNilGetNosqlApplianceDiskEncryptionKey(v GetNosqlApplianceDiskEncryptionKey) OptNilGetNosqlApplianceDiskEncryptionKey {
+	return OptNilGetNosqlApplianceDiskEncryptionKey{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilGetNosqlApplianceDiskEncryptionKey is optional nullable GetNosqlApplianceDiskEncryptionKey.
+type OptNilGetNosqlApplianceDiskEncryptionKey struct {
+	Value GetNosqlApplianceDiskEncryptionKey
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilGetNosqlApplianceDiskEncryptionKey was set.
+func (o OptNilGetNosqlApplianceDiskEncryptionKey) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilGetNosqlApplianceDiskEncryptionKey) Reset() {
+	var v GetNosqlApplianceDiskEncryptionKey
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilGetNosqlApplianceDiskEncryptionKey) SetTo(v GetNosqlApplianceDiskEncryptionKey) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilGetNosqlApplianceDiskEncryptionKey) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilGetNosqlApplianceDiskEncryptionKey) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v GetNosqlApplianceDiskEncryptionKey
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilGetNosqlApplianceDiskEncryptionKey) Get() (v GetNosqlApplianceDiskEncryptionKey, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilGetNosqlApplianceDiskEncryptionKey) Or(d GetNosqlApplianceDiskEncryptionKey) GetNosqlApplianceDiskEncryptionKey {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilGetNosqlApplianceInterfacesItemSwitchSubnet returns new OptNilGetNosqlApplianceInterfacesItemSwitchSubnet with value set to v.
+func NewOptNilGetNosqlApplianceInterfacesItemSwitchSubnet(v GetNosqlApplianceInterfacesItemSwitchSubnet) OptNilGetNosqlApplianceInterfacesItemSwitchSubnet {
+	return OptNilGetNosqlApplianceInterfacesItemSwitchSubnet{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilGetNosqlApplianceInterfacesItemSwitchSubnet is optional nullable GetNosqlApplianceInterfacesItemSwitchSubnet.
+type OptNilGetNosqlApplianceInterfacesItemSwitchSubnet struct {
+	Value GetNosqlApplianceInterfacesItemSwitchSubnet
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilGetNosqlApplianceInterfacesItemSwitchSubnet was set.
+func (o OptNilGetNosqlApplianceInterfacesItemSwitchSubnet) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilGetNosqlApplianceInterfacesItemSwitchSubnet) Reset() {
+	var v GetNosqlApplianceInterfacesItemSwitchSubnet
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilGetNosqlApplianceInterfacesItemSwitchSubnet) SetTo(v GetNosqlApplianceInterfacesItemSwitchSubnet) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilGetNosqlApplianceInterfacesItemSwitchSubnet) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilGetNosqlApplianceInterfacesItemSwitchSubnet) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v GetNosqlApplianceInterfacesItemSwitchSubnet
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilGetNosqlApplianceInterfacesItemSwitchSubnet) Get() (v GetNosqlApplianceInterfacesItemSwitchSubnet, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilGetNosqlApplianceInterfacesItemSwitchSubnet) Or(d GetNosqlApplianceInterfacesItemSwitchSubnet) GetNosqlApplianceInterfacesItemSwitchSubnet {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet returns new OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet with value set to v.
+func NewOptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet(v GetNosqlApplianceInterfacesItemSwitchUserSubnet) OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet {
+	return OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet is optional nullable GetNosqlApplianceInterfacesItemSwitchUserSubnet.
+type OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet struct {
+	Value GetNosqlApplianceInterfacesItemSwitchUserSubnet
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet was set.
+func (o OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) Reset() {
+	var v GetNosqlApplianceInterfacesItemSwitchUserSubnet
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) SetTo(v GetNosqlApplianceInterfacesItemSwitchUserSubnet) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v GetNosqlApplianceInterfacesItemSwitchUserSubnet
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) Get() (v GetNosqlApplianceInterfacesItemSwitchUserSubnet, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) Or(d GetNosqlApplianceInterfacesItemSwitchUserSubnet) GetNosqlApplianceInterfacesItemSwitchUserSubnet {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilGetNosqlSettingsBackup returns new OptNilGetNosqlSettingsBackup with value set to v.
+func NewOptNilGetNosqlSettingsBackup(v GetNosqlSettingsBackup) OptNilGetNosqlSettingsBackup {
+	return OptNilGetNosqlSettingsBackup{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilGetNosqlSettingsBackup is optional nullable GetNosqlSettingsBackup.
+type OptNilGetNosqlSettingsBackup struct {
+	Value GetNosqlSettingsBackup
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilGetNosqlSettingsBackup was set.
+func (o OptNilGetNosqlSettingsBackup) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilGetNosqlSettingsBackup) Reset() {
+	var v GetNosqlSettingsBackup
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilGetNosqlSettingsBackup) SetTo(v GetNosqlSettingsBackup) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilGetNosqlSettingsBackup) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilGetNosqlSettingsBackup) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v GetNosqlSettingsBackup
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilGetNosqlSettingsBackup) Get() (v GetNosqlSettingsBackup, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilGetNosqlSettingsBackup) Or(d GetNosqlSettingsBackup) GetNosqlSettingsBackup {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilGetNosqlSettingsBackupDayOfWeekItemArray returns new OptNilGetNosqlSettingsBackupDayOfWeekItemArray with value set to v.
+func NewOptNilGetNosqlSettingsBackupDayOfWeekItemArray(v []GetNosqlSettingsBackupDayOfWeekItem) OptNilGetNosqlSettingsBackupDayOfWeekItemArray {
+	return OptNilGetNosqlSettingsBackupDayOfWeekItemArray{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilGetNosqlSettingsBackupDayOfWeekItemArray is optional nullable []GetNosqlSettingsBackupDayOfWeekItem.
+type OptNilGetNosqlSettingsBackupDayOfWeekItemArray struct {
+	Value []GetNosqlSettingsBackupDayOfWeekItem
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilGetNosqlSettingsBackupDayOfWeekItemArray was set.
+func (o OptNilGetNosqlSettingsBackupDayOfWeekItemArray) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilGetNosqlSettingsBackupDayOfWeekItemArray) Reset() {
+	var v []GetNosqlSettingsBackupDayOfWeekItem
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilGetNosqlSettingsBackupDayOfWeekItemArray) SetTo(v []GetNosqlSettingsBackupDayOfWeekItem) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilGetNosqlSettingsBackupDayOfWeekItemArray) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilGetNosqlSettingsBackupDayOfWeekItemArray) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v []GetNosqlSettingsBackupDayOfWeekItem
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilGetNosqlSettingsBackupDayOfWeekItemArray) Get() (v []GetNosqlSettingsBackupDayOfWeekItem, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilGetNosqlSettingsBackupDayOfWeekItemArray) Or(d []GetNosqlSettingsBackupDayOfWeekItem) []GetNosqlSettingsBackupDayOfWeekItem {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilGetNosqlSettingsRepair returns new OptNilGetNosqlSettingsRepair with value set to v.
+func NewOptNilGetNosqlSettingsRepair(v GetNosqlSettingsRepair) OptNilGetNosqlSettingsRepair {
+	return OptNilGetNosqlSettingsRepair{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilGetNosqlSettingsRepair is optional nullable GetNosqlSettingsRepair.
+type OptNilGetNosqlSettingsRepair struct {
+	Value GetNosqlSettingsRepair
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilGetNosqlSettingsRepair was set.
+func (o OptNilGetNosqlSettingsRepair) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilGetNosqlSettingsRepair) Reset() {
+	var v GetNosqlSettingsRepair
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilGetNosqlSettingsRepair) SetTo(v GetNosqlSettingsRepair) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilGetNosqlSettingsRepair) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilGetNosqlSettingsRepair) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v GetNosqlSettingsRepair
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilGetNosqlSettingsRepair) Get() (v GetNosqlSettingsRepair, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilGetNosqlSettingsRepair) Or(d GetNosqlSettingsRepair) GetNosqlSettingsRepair {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -3812,6 +8154,132 @@ func (o OptNilNosqlApplianceInterfacesItemSwitchSubnet) Or(d NosqlApplianceInter
 	return d
 }
 
+// NewOptNilNosqlApplianceInterfacesItemSwitchUserSubnet returns new OptNilNosqlApplianceInterfacesItemSwitchUserSubnet with value set to v.
+func NewOptNilNosqlApplianceInterfacesItemSwitchUserSubnet(v NosqlApplianceInterfacesItemSwitchUserSubnet) OptNilNosqlApplianceInterfacesItemSwitchUserSubnet {
+	return OptNilNosqlApplianceInterfacesItemSwitchUserSubnet{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilNosqlApplianceInterfacesItemSwitchUserSubnet is optional nullable NosqlApplianceInterfacesItemSwitchUserSubnet.
+type OptNilNosqlApplianceInterfacesItemSwitchUserSubnet struct {
+	Value NosqlApplianceInterfacesItemSwitchUserSubnet
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilNosqlApplianceInterfacesItemSwitchUserSubnet was set.
+func (o OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) Reset() {
+	var v NosqlApplianceInterfacesItemSwitchUserSubnet
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) SetTo(v NosqlApplianceInterfacesItemSwitchUserSubnet) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v NosqlApplianceInterfacesItemSwitchUserSubnet
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) Get() (v NosqlApplianceInterfacesItemSwitchUserSubnet, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) Or(d NosqlApplianceInterfacesItemSwitchUserSubnet) NosqlApplianceInterfacesItemSwitchUserSubnet {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilNosqlCreateRequestApplianceDisk returns new OptNilNosqlCreateRequestApplianceDisk with value set to v.
+func NewOptNilNosqlCreateRequestApplianceDisk(v NosqlCreateRequestApplianceDisk) OptNilNosqlCreateRequestApplianceDisk {
+	return OptNilNosqlCreateRequestApplianceDisk{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilNosqlCreateRequestApplianceDisk is optional nullable NosqlCreateRequestApplianceDisk.
+type OptNilNosqlCreateRequestApplianceDisk struct {
+	Value NosqlCreateRequestApplianceDisk
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilNosqlCreateRequestApplianceDisk was set.
+func (o OptNilNosqlCreateRequestApplianceDisk) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilNosqlCreateRequestApplianceDisk) Reset() {
+	var v NosqlCreateRequestApplianceDisk
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilNosqlCreateRequestApplianceDisk) SetTo(v NosqlCreateRequestApplianceDisk) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilNosqlCreateRequestApplianceDisk) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilNosqlCreateRequestApplianceDisk) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v NosqlCreateRequestApplianceDisk
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilNosqlCreateRequestApplianceDisk) Get() (v NosqlCreateRequestApplianceDisk, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilNosqlCreateRequestApplianceDisk) Or(d NosqlCreateRequestApplianceDisk) NosqlCreateRequestApplianceDisk {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilNosqlCreateRequestApplianceSettingsBackup returns new OptNilNosqlCreateRequestApplianceSettingsBackup with value set to v.
 func NewOptNilNosqlCreateRequestApplianceSettingsBackup(v NosqlCreateRequestApplianceSettingsBackup) OptNilNosqlCreateRequestApplianceSettingsBackup {
 	return OptNilNosqlCreateRequestApplianceSettingsBackup{
@@ -3940,6 +8408,69 @@ func (o OptNilNosqlCreateRequestApplianceSettingsBackupDayOfWeekItemArray) Or(d 
 	return d
 }
 
+// NewOptNilNosqlCreateRequestApplianceSettingsRepair returns new OptNilNosqlCreateRequestApplianceSettingsRepair with value set to v.
+func NewOptNilNosqlCreateRequestApplianceSettingsRepair(v NosqlCreateRequestApplianceSettingsRepair) OptNilNosqlCreateRequestApplianceSettingsRepair {
+	return OptNilNosqlCreateRequestApplianceSettingsRepair{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilNosqlCreateRequestApplianceSettingsRepair is optional nullable NosqlCreateRequestApplianceSettingsRepair.
+type OptNilNosqlCreateRequestApplianceSettingsRepair struct {
+	Value NosqlCreateRequestApplianceSettingsRepair
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilNosqlCreateRequestApplianceSettingsRepair was set.
+func (o OptNilNosqlCreateRequestApplianceSettingsRepair) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilNosqlCreateRequestApplianceSettingsRepair) Reset() {
+	var v NosqlCreateRequestApplianceSettingsRepair
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilNosqlCreateRequestApplianceSettingsRepair) SetTo(v NosqlCreateRequestApplianceSettingsRepair) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilNosqlCreateRequestApplianceSettingsRepair) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilNosqlCreateRequestApplianceSettingsRepair) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v NosqlCreateRequestApplianceSettingsRepair
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilNosqlCreateRequestApplianceSettingsRepair) Get() (v NosqlCreateRequestApplianceSettingsRepair, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilNosqlCreateRequestApplianceSettingsRepair) Or(d NosqlCreateRequestApplianceSettingsRepair) NosqlCreateRequestApplianceSettingsRepair {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilNosqlSettingsBackup returns new OptNilNosqlSettingsBackup with value set to v.
 func NewOptNilNosqlSettingsBackup(v NosqlSettingsBackup) OptNilNosqlSettingsBackup {
 	return OptNilNosqlSettingsBackup{
@@ -4060,6 +8591,69 @@ func (o OptNilNosqlSettingsBackupDayOfWeekItemArray) Get() (v []NosqlSettingsBac
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilNosqlSettingsBackupDayOfWeekItemArray) Or(d []NosqlSettingsBackupDayOfWeekItem) []NosqlSettingsBackupDayOfWeekItem {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilNosqlSettingsRepair returns new OptNilNosqlSettingsRepair with value set to v.
+func NewOptNilNosqlSettingsRepair(v NosqlSettingsRepair) OptNilNosqlSettingsRepair {
+	return OptNilNosqlSettingsRepair{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilNosqlSettingsRepair is optional nullable NosqlSettingsRepair.
+type OptNilNosqlSettingsRepair struct {
+	Value NosqlSettingsRepair
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilNosqlSettingsRepair was set.
+func (o OptNilNosqlSettingsRepair) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilNosqlSettingsRepair) Reset() {
+	var v NosqlSettingsRepair
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilNosqlSettingsRepair) SetTo(v NosqlSettingsRepair) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilNosqlSettingsRepair) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilNosqlSettingsRepair) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v NosqlSettingsRepair
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilNosqlSettingsRepair) Get() (v NosqlSettingsRepair, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilNosqlSettingsRepair) Or(d NosqlSettingsRepair) NosqlSettingsRepair {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4194,6 +8788,69 @@ func (o OptNilNosqlUpdateRequestApplianceSettingsBackupDayOfWeekItemArray) Or(d 
 	return d
 }
 
+// NewOptNilNosqlUpdateRequestApplianceSettingsRepair returns new OptNilNosqlUpdateRequestApplianceSettingsRepair with value set to v.
+func NewOptNilNosqlUpdateRequestApplianceSettingsRepair(v NosqlUpdateRequestApplianceSettingsRepair) OptNilNosqlUpdateRequestApplianceSettingsRepair {
+	return OptNilNosqlUpdateRequestApplianceSettingsRepair{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilNosqlUpdateRequestApplianceSettingsRepair is optional nullable NosqlUpdateRequestApplianceSettingsRepair.
+type OptNilNosqlUpdateRequestApplianceSettingsRepair struct {
+	Value NosqlUpdateRequestApplianceSettingsRepair
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilNosqlUpdateRequestApplianceSettingsRepair was set.
+func (o OptNilNosqlUpdateRequestApplianceSettingsRepair) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilNosqlUpdateRequestApplianceSettingsRepair) Reset() {
+	var v NosqlUpdateRequestApplianceSettingsRepair
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilNosqlUpdateRequestApplianceSettingsRepair) SetTo(v NosqlUpdateRequestApplianceSettingsRepair) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilNosqlUpdateRequestApplianceSettingsRepair) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilNosqlUpdateRequestApplianceSettingsRepair) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v NosqlUpdateRequestApplianceSettingsRepair
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilNosqlUpdateRequestApplianceSettingsRepair) Get() (v NosqlUpdateRequestApplianceSettingsRepair, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilNosqlUpdateRequestApplianceSettingsRepair) Or(d NosqlUpdateRequestApplianceSettingsRepair) NosqlUpdateRequestApplianceSettingsRepair {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilString returns new OptNilString with value set to v.
 func NewOptNilString(v string) OptNilString {
 	return OptNilString{
@@ -4320,6 +8977,98 @@ func (o OptNilTags) Or(d Tags) Tags {
 	return d
 }
 
+// NewOptNodeHealthNosql returns new OptNodeHealthNosql with value set to v.
+func NewOptNodeHealthNosql(v NodeHealthNosql) OptNodeHealthNosql {
+	return OptNodeHealthNosql{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNodeHealthNosql is optional NodeHealthNosql.
+type OptNodeHealthNosql struct {
+	Value NodeHealthNosql
+	Set   bool
+}
+
+// IsSet returns true if OptNodeHealthNosql was set.
+func (o OptNodeHealthNosql) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNodeHealthNosql) Reset() {
+	var v NodeHealthNosql
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNodeHealthNosql) SetTo(v NodeHealthNosql) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNodeHealthNosql) Get() (v NodeHealthNosql, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNodeHealthNosql) Or(d NodeHealthNosql) NodeHealthNosql {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNodeHealthNosqlStatus returns new OptNodeHealthNosqlStatus with value set to v.
+func NewOptNodeHealthNosqlStatus(v NodeHealthNosqlStatus) OptNodeHealthNosqlStatus {
+	return OptNodeHealthNosqlStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNodeHealthNosqlStatus is optional NodeHealthNosqlStatus.
+type OptNodeHealthNosqlStatus struct {
+	Value NodeHealthNosqlStatus
+	Set   bool
+}
+
+// IsSet returns true if OptNodeHealthNosqlStatus was set.
+func (o OptNodeHealthNosqlStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNodeHealthNosqlStatus) Reset() {
+	var v NodeHealthNosqlStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNodeHealthNosqlStatus) SetTo(v NodeHealthNosqlStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNodeHealthNosqlStatus) Get() (v NodeHealthNosqlStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNodeHealthNosqlStatus) Or(d NodeHealthNosqlStatus) NodeHealthNosqlStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNosqlAppliance returns new OptNosqlAppliance with value set to v.
 func NewOptNosqlAppliance(v NosqlAppliance) OptNosqlAppliance {
 	return OptNosqlAppliance{
@@ -4360,6 +9109,52 @@ func (o OptNosqlAppliance) Get() (v NosqlAppliance, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNosqlAppliance) Or(d NosqlAppliance) NosqlAppliance {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlApplianceDiskEncryptionKey returns new OptNosqlApplianceDiskEncryptionKey with value set to v.
+func NewOptNosqlApplianceDiskEncryptionKey(v NosqlApplianceDiskEncryptionKey) OptNosqlApplianceDiskEncryptionKey {
+	return OptNosqlApplianceDiskEncryptionKey{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlApplianceDiskEncryptionKey is optional NosqlApplianceDiskEncryptionKey.
+type OptNosqlApplianceDiskEncryptionKey struct {
+	Value NosqlApplianceDiskEncryptionKey
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlApplianceDiskEncryptionKey was set.
+func (o OptNosqlApplianceDiskEncryptionKey) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlApplianceDiskEncryptionKey) Reset() {
+	var v NosqlApplianceDiskEncryptionKey
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlApplianceDiskEncryptionKey) SetTo(v NosqlApplianceDiskEncryptionKey) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlApplianceDiskEncryptionKey) Get() (v NosqlApplianceDiskEncryptionKey, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlApplianceDiskEncryptionKey) Or(d NosqlApplianceDiskEncryptionKey) NosqlApplianceDiskEncryptionKey {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4458,52 +9253,6 @@ func (o OptNosqlApplianceInterfacesItemSwitchSubnetInternet) Or(d NosqlAppliance
 	return d
 }
 
-// NewOptNosqlApplianceInterfacesItemSwitchUserSubnet returns new OptNosqlApplianceInterfacesItemSwitchUserSubnet with value set to v.
-func NewOptNosqlApplianceInterfacesItemSwitchUserSubnet(v NosqlApplianceInterfacesItemSwitchUserSubnet) OptNosqlApplianceInterfacesItemSwitchUserSubnet {
-	return OptNosqlApplianceInterfacesItemSwitchUserSubnet{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNosqlApplianceInterfacesItemSwitchUserSubnet is optional NosqlApplianceInterfacesItemSwitchUserSubnet.
-type OptNosqlApplianceInterfacesItemSwitchUserSubnet struct {
-	Value NosqlApplianceInterfacesItemSwitchUserSubnet
-	Set   bool
-}
-
-// IsSet returns true if OptNosqlApplianceInterfacesItemSwitchUserSubnet was set.
-func (o OptNosqlApplianceInterfacesItemSwitchUserSubnet) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNosqlApplianceInterfacesItemSwitchUserSubnet) Reset() {
-	var v NosqlApplianceInterfacesItemSwitchUserSubnet
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptNosqlApplianceInterfacesItemSwitchUserSubnet) SetTo(v NosqlApplianceInterfacesItemSwitchUserSubnet) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNosqlApplianceInterfacesItemSwitchUserSubnet) Get() (v NosqlApplianceInterfacesItemSwitchUserSubnet, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNosqlApplianceInterfacesItemSwitchUserSubnet) Or(d NosqlApplianceInterfacesItemSwitchUserSubnet) NosqlApplianceInterfacesItemSwitchUserSubnet {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptNosqlApplianceRemark returns new OptNosqlApplianceRemark with value set to v.
 func NewOptNosqlApplianceRemark(v NosqlApplianceRemark) OptNosqlApplianceRemark {
 	return OptNosqlApplianceRemark{
@@ -4550,38 +9299,38 @@ func (o OptNosqlApplianceRemark) Or(d NosqlApplianceRemark) NosqlApplianceRemark
 	return d
 }
 
-// NewOptNosqlApplianceRemarkNosql returns new OptNosqlApplianceRemarkNosql with value set to v.
-func NewOptNosqlApplianceRemarkNosql(v NosqlApplianceRemarkNosql) OptNosqlApplianceRemarkNosql {
-	return OptNosqlApplianceRemarkNosql{
+// NewOptNosqlApplianceRemarkNosqlDatabaseEngine returns new OptNosqlApplianceRemarkNosqlDatabaseEngine with value set to v.
+func NewOptNosqlApplianceRemarkNosqlDatabaseEngine(v NosqlApplianceRemarkNosqlDatabaseEngine) OptNosqlApplianceRemarkNosqlDatabaseEngine {
+	return OptNosqlApplianceRemarkNosqlDatabaseEngine{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptNosqlApplianceRemarkNosql is optional NosqlApplianceRemarkNosql.
-type OptNosqlApplianceRemarkNosql struct {
-	Value NosqlApplianceRemarkNosql
+// OptNosqlApplianceRemarkNosqlDatabaseEngine is optional NosqlApplianceRemarkNosqlDatabaseEngine.
+type OptNosqlApplianceRemarkNosqlDatabaseEngine struct {
+	Value NosqlApplianceRemarkNosqlDatabaseEngine
 	Set   bool
 }
 
-// IsSet returns true if OptNosqlApplianceRemarkNosql was set.
-func (o OptNosqlApplianceRemarkNosql) IsSet() bool { return o.Set }
+// IsSet returns true if OptNosqlApplianceRemarkNosqlDatabaseEngine was set.
+func (o OptNosqlApplianceRemarkNosqlDatabaseEngine) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptNosqlApplianceRemarkNosql) Reset() {
-	var v NosqlApplianceRemarkNosql
+func (o *OptNosqlApplianceRemarkNosqlDatabaseEngine) Reset() {
+	var v NosqlApplianceRemarkNosqlDatabaseEngine
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptNosqlApplianceRemarkNosql) SetTo(v NosqlApplianceRemarkNosql) {
+func (o *OptNosqlApplianceRemarkNosqlDatabaseEngine) SetTo(v NosqlApplianceRemarkNosqlDatabaseEngine) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptNosqlApplianceRemarkNosql) Get() (v NosqlApplianceRemarkNosql, ok bool) {
+func (o OptNosqlApplianceRemarkNosqlDatabaseEngine) Get() (v NosqlApplianceRemarkNosqlDatabaseEngine, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -4589,7 +9338,237 @@ func (o OptNosqlApplianceRemarkNosql) Get() (v NosqlApplianceRemarkNosql, ok boo
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptNosqlApplianceRemarkNosql) Or(d NosqlApplianceRemarkNosql) NosqlApplianceRemarkNosql {
+func (o OptNosqlApplianceRemarkNosqlDatabaseEngine) Or(d NosqlApplianceRemarkNosqlDatabaseEngine) NosqlApplianceRemarkNosqlDatabaseEngine {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlApplianceRemarkNosqlDiskSize returns new OptNosqlApplianceRemarkNosqlDiskSize with value set to v.
+func NewOptNosqlApplianceRemarkNosqlDiskSize(v NosqlApplianceRemarkNosqlDiskSize) OptNosqlApplianceRemarkNosqlDiskSize {
+	return OptNosqlApplianceRemarkNosqlDiskSize{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlApplianceRemarkNosqlDiskSize is optional NosqlApplianceRemarkNosqlDiskSize.
+type OptNosqlApplianceRemarkNosqlDiskSize struct {
+	Value NosqlApplianceRemarkNosqlDiskSize
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlApplianceRemarkNosqlDiskSize was set.
+func (o OptNosqlApplianceRemarkNosqlDiskSize) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlApplianceRemarkNosqlDiskSize) Reset() {
+	var v NosqlApplianceRemarkNosqlDiskSize
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlApplianceRemarkNosqlDiskSize) SetTo(v NosqlApplianceRemarkNosqlDiskSize) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlApplianceRemarkNosqlDiskSize) Get() (v NosqlApplianceRemarkNosqlDiskSize, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlApplianceRemarkNosqlDiskSize) Or(d NosqlApplianceRemarkNosqlDiskSize) NosqlApplianceRemarkNosqlDiskSize {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlApplianceRemarkNosqlMemory returns new OptNosqlApplianceRemarkNosqlMemory with value set to v.
+func NewOptNosqlApplianceRemarkNosqlMemory(v NosqlApplianceRemarkNosqlMemory) OptNosqlApplianceRemarkNosqlMemory {
+	return OptNosqlApplianceRemarkNosqlMemory{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlApplianceRemarkNosqlMemory is optional NosqlApplianceRemarkNosqlMemory.
+type OptNosqlApplianceRemarkNosqlMemory struct {
+	Value NosqlApplianceRemarkNosqlMemory
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlApplianceRemarkNosqlMemory was set.
+func (o OptNosqlApplianceRemarkNosqlMemory) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlApplianceRemarkNosqlMemory) Reset() {
+	var v NosqlApplianceRemarkNosqlMemory
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlApplianceRemarkNosqlMemory) SetTo(v NosqlApplianceRemarkNosqlMemory) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlApplianceRemarkNosqlMemory) Get() (v NosqlApplianceRemarkNosqlMemory, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlApplianceRemarkNosqlMemory) Or(d NosqlApplianceRemarkNosqlMemory) NosqlApplianceRemarkNosqlMemory {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlApplianceRemarkNosqlPrimaryNodes returns new OptNosqlApplianceRemarkNosqlPrimaryNodes with value set to v.
+func NewOptNosqlApplianceRemarkNosqlPrimaryNodes(v NosqlApplianceRemarkNosqlPrimaryNodes) OptNosqlApplianceRemarkNosqlPrimaryNodes {
+	return OptNosqlApplianceRemarkNosqlPrimaryNodes{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlApplianceRemarkNosqlPrimaryNodes is optional NosqlApplianceRemarkNosqlPrimaryNodes.
+type OptNosqlApplianceRemarkNosqlPrimaryNodes struct {
+	Value NosqlApplianceRemarkNosqlPrimaryNodes
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlApplianceRemarkNosqlPrimaryNodes was set.
+func (o OptNosqlApplianceRemarkNosqlPrimaryNodes) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlApplianceRemarkNosqlPrimaryNodes) Reset() {
+	var v NosqlApplianceRemarkNosqlPrimaryNodes
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlApplianceRemarkNosqlPrimaryNodes) SetTo(v NosqlApplianceRemarkNosqlPrimaryNodes) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlApplianceRemarkNosqlPrimaryNodes) Get() (v NosqlApplianceRemarkNosqlPrimaryNodes, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlApplianceRemarkNosqlPrimaryNodes) Or(d NosqlApplianceRemarkNosqlPrimaryNodes) NosqlApplianceRemarkNosqlPrimaryNodes {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlApplianceRemarkNosqlStorage returns new OptNosqlApplianceRemarkNosqlStorage with value set to v.
+func NewOptNosqlApplianceRemarkNosqlStorage(v NosqlApplianceRemarkNosqlStorage) OptNosqlApplianceRemarkNosqlStorage {
+	return OptNosqlApplianceRemarkNosqlStorage{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlApplianceRemarkNosqlStorage is optional NosqlApplianceRemarkNosqlStorage.
+type OptNosqlApplianceRemarkNosqlStorage struct {
+	Value NosqlApplianceRemarkNosqlStorage
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlApplianceRemarkNosqlStorage was set.
+func (o OptNosqlApplianceRemarkNosqlStorage) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlApplianceRemarkNosqlStorage) Reset() {
+	var v NosqlApplianceRemarkNosqlStorage
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlApplianceRemarkNosqlStorage) SetTo(v NosqlApplianceRemarkNosqlStorage) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlApplianceRemarkNosqlStorage) Get() (v NosqlApplianceRemarkNosqlStorage, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlApplianceRemarkNosqlStorage) Or(d NosqlApplianceRemarkNosqlStorage) NosqlApplianceRemarkNosqlStorage {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlApplianceRemarkNosqlVirtualcore returns new OptNosqlApplianceRemarkNosqlVirtualcore with value set to v.
+func NewOptNosqlApplianceRemarkNosqlVirtualcore(v NosqlApplianceRemarkNosqlVirtualcore) OptNosqlApplianceRemarkNosqlVirtualcore {
+	return OptNosqlApplianceRemarkNosqlVirtualcore{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlApplianceRemarkNosqlVirtualcore is optional NosqlApplianceRemarkNosqlVirtualcore.
+type OptNosqlApplianceRemarkNosqlVirtualcore struct {
+	Value NosqlApplianceRemarkNosqlVirtualcore
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlApplianceRemarkNosqlVirtualcore was set.
+func (o OptNosqlApplianceRemarkNosqlVirtualcore) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlApplianceRemarkNosqlVirtualcore) Reset() {
+	var v NosqlApplianceRemarkNosqlVirtualcore
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlApplianceRemarkNosqlVirtualcore) SetTo(v NosqlApplianceRemarkNosqlVirtualcore) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlApplianceRemarkNosqlVirtualcore) Get() (v NosqlApplianceRemarkNosqlVirtualcore, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlApplianceRemarkNosqlVirtualcore) Or(d NosqlApplianceRemarkNosqlVirtualcore) NosqlApplianceRemarkNosqlVirtualcore {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4682,6 +9661,190 @@ func (o OptNosqlBackupResponseNosql) Get() (v NosqlBackupResponseNosql, ok bool)
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNosqlBackupResponseNosql) Or(d NosqlBackupResponseNosql) NosqlBackupResponseNosql {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlCreateRequestApplianceDiskEncryptionKey returns new OptNosqlCreateRequestApplianceDiskEncryptionKey with value set to v.
+func NewOptNosqlCreateRequestApplianceDiskEncryptionKey(v NosqlCreateRequestApplianceDiskEncryptionKey) OptNosqlCreateRequestApplianceDiskEncryptionKey {
+	return OptNosqlCreateRequestApplianceDiskEncryptionKey{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlCreateRequestApplianceDiskEncryptionKey is optional NosqlCreateRequestApplianceDiskEncryptionKey.
+type OptNosqlCreateRequestApplianceDiskEncryptionKey struct {
+	Value NosqlCreateRequestApplianceDiskEncryptionKey
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlCreateRequestApplianceDiskEncryptionKey was set.
+func (o OptNosqlCreateRequestApplianceDiskEncryptionKey) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlCreateRequestApplianceDiskEncryptionKey) Reset() {
+	var v NosqlCreateRequestApplianceDiskEncryptionKey
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlCreateRequestApplianceDiskEncryptionKey) SetTo(v NosqlCreateRequestApplianceDiskEncryptionKey) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlCreateRequestApplianceDiskEncryptionKey) Get() (v NosqlCreateRequestApplianceDiskEncryptionKey, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlCreateRequestApplianceDiskEncryptionKey) Or(d NosqlCreateRequestApplianceDiskEncryptionKey) NosqlCreateRequestApplianceDiskEncryptionKey {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlCreateRequestApplianceSettings returns new OptNosqlCreateRequestApplianceSettings with value set to v.
+func NewOptNosqlCreateRequestApplianceSettings(v NosqlCreateRequestApplianceSettings) OptNosqlCreateRequestApplianceSettings {
+	return OptNosqlCreateRequestApplianceSettings{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlCreateRequestApplianceSettings is optional NosqlCreateRequestApplianceSettings.
+type OptNosqlCreateRequestApplianceSettings struct {
+	Value NosqlCreateRequestApplianceSettings
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlCreateRequestApplianceSettings was set.
+func (o OptNosqlCreateRequestApplianceSettings) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlCreateRequestApplianceSettings) Reset() {
+	var v NosqlCreateRequestApplianceSettings
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlCreateRequestApplianceSettings) SetTo(v NosqlCreateRequestApplianceSettings) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlCreateRequestApplianceSettings) Get() (v NosqlCreateRequestApplianceSettings, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlCreateRequestApplianceSettings) Or(d NosqlCreateRequestApplianceSettings) NosqlCreateRequestApplianceSettings {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlCreateRequestApplianceSettingsRepairFull returns new OptNosqlCreateRequestApplianceSettingsRepairFull with value set to v.
+func NewOptNosqlCreateRequestApplianceSettingsRepairFull(v NosqlCreateRequestApplianceSettingsRepairFull) OptNosqlCreateRequestApplianceSettingsRepairFull {
+	return OptNosqlCreateRequestApplianceSettingsRepairFull{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlCreateRequestApplianceSettingsRepairFull is optional NosqlCreateRequestApplianceSettingsRepairFull.
+type OptNosqlCreateRequestApplianceSettingsRepairFull struct {
+	Value NosqlCreateRequestApplianceSettingsRepairFull
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlCreateRequestApplianceSettingsRepairFull was set.
+func (o OptNosqlCreateRequestApplianceSettingsRepairFull) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlCreateRequestApplianceSettingsRepairFull) Reset() {
+	var v NosqlCreateRequestApplianceSettingsRepairFull
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlCreateRequestApplianceSettingsRepairFull) SetTo(v NosqlCreateRequestApplianceSettingsRepairFull) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlCreateRequestApplianceSettingsRepairFull) Get() (v NosqlCreateRequestApplianceSettingsRepairFull, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlCreateRequestApplianceSettingsRepairFull) Or(d NosqlCreateRequestApplianceSettingsRepairFull) NosqlCreateRequestApplianceSettingsRepairFull {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlCreateRequestApplianceSettingsRepairIncremental returns new OptNosqlCreateRequestApplianceSettingsRepairIncremental with value set to v.
+func NewOptNosqlCreateRequestApplianceSettingsRepairIncremental(v NosqlCreateRequestApplianceSettingsRepairIncremental) OptNosqlCreateRequestApplianceSettingsRepairIncremental {
+	return OptNosqlCreateRequestApplianceSettingsRepairIncremental{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlCreateRequestApplianceSettingsRepairIncremental is optional NosqlCreateRequestApplianceSettingsRepairIncremental.
+type OptNosqlCreateRequestApplianceSettingsRepairIncremental struct {
+	Value NosqlCreateRequestApplianceSettingsRepairIncremental
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlCreateRequestApplianceSettingsRepairIncremental was set.
+func (o OptNosqlCreateRequestApplianceSettingsRepairIncremental) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlCreateRequestApplianceSettingsRepairIncremental) Reset() {
+	var v NosqlCreateRequestApplianceSettingsRepairIncremental
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlCreateRequestApplianceSettingsRepairIncremental) SetTo(v NosqlCreateRequestApplianceSettingsRepairIncremental) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlCreateRequestApplianceSettingsRepairIncremental) Get() (v NosqlCreateRequestApplianceSettingsRepairIncremental, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlCreateRequestApplianceSettingsRepairIncremental) Or(d NosqlCreateRequestApplianceSettingsRepairIncremental) NosqlCreateRequestApplianceSettingsRepairIncremental {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4826,38 +9989,38 @@ func (o OptNosqlCreateResponseHiddenRemark) Or(d NosqlCreateResponseHiddenRemark
 	return d
 }
 
-// NewOptNosqlCreateResponseHiddenRemarkEncripted returns new OptNosqlCreateResponseHiddenRemarkEncripted with value set to v.
-func NewOptNosqlCreateResponseHiddenRemarkEncripted(v NosqlCreateResponseHiddenRemarkEncripted) OptNosqlCreateResponseHiddenRemarkEncripted {
-	return OptNosqlCreateResponseHiddenRemarkEncripted{
+// NewOptNosqlCreateResponseHiddenRemarkEncrypted returns new OptNosqlCreateResponseHiddenRemarkEncrypted with value set to v.
+func NewOptNosqlCreateResponseHiddenRemarkEncrypted(v NosqlCreateResponseHiddenRemarkEncrypted) OptNosqlCreateResponseHiddenRemarkEncrypted {
+	return OptNosqlCreateResponseHiddenRemarkEncrypted{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptNosqlCreateResponseHiddenRemarkEncripted is optional NosqlCreateResponseHiddenRemarkEncripted.
-type OptNosqlCreateResponseHiddenRemarkEncripted struct {
-	Value NosqlCreateResponseHiddenRemarkEncripted
+// OptNosqlCreateResponseHiddenRemarkEncrypted is optional NosqlCreateResponseHiddenRemarkEncrypted.
+type OptNosqlCreateResponseHiddenRemarkEncrypted struct {
+	Value NosqlCreateResponseHiddenRemarkEncrypted
 	Set   bool
 }
 
-// IsSet returns true if OptNosqlCreateResponseHiddenRemarkEncripted was set.
-func (o OptNosqlCreateResponseHiddenRemarkEncripted) IsSet() bool { return o.Set }
+// IsSet returns true if OptNosqlCreateResponseHiddenRemarkEncrypted was set.
+func (o OptNosqlCreateResponseHiddenRemarkEncrypted) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptNosqlCreateResponseHiddenRemarkEncripted) Reset() {
-	var v NosqlCreateResponseHiddenRemarkEncripted
+func (o *OptNosqlCreateResponseHiddenRemarkEncrypted) Reset() {
+	var v NosqlCreateResponseHiddenRemarkEncrypted
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptNosqlCreateResponseHiddenRemarkEncripted) SetTo(v NosqlCreateResponseHiddenRemarkEncripted) {
+func (o *OptNosqlCreateResponseHiddenRemarkEncrypted) SetTo(v NosqlCreateResponseHiddenRemarkEncrypted) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptNosqlCreateResponseHiddenRemarkEncripted) Get() (v NosqlCreateResponseHiddenRemarkEncripted, ok bool) {
+func (o OptNosqlCreateResponseHiddenRemarkEncrypted) Get() (v NosqlCreateResponseHiddenRemarkEncrypted, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -4865,7 +10028,7 @@ func (o OptNosqlCreateResponseHiddenRemarkEncripted) Get() (v NosqlCreateRespons
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptNosqlCreateResponseHiddenRemarkEncripted) Or(d NosqlCreateResponseHiddenRemarkEncripted) NosqlCreateResponseHiddenRemarkEncripted {
+func (o OptNosqlCreateResponseHiddenRemarkEncrypted) Or(d NosqlCreateResponseHiddenRemarkEncrypted) NosqlCreateResponseHiddenRemarkEncrypted {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5056,6 +10219,98 @@ func (o OptNosqlIsOkResponseNosql) Or(d NosqlIsOkResponseNosql) NosqlIsOkRespons
 	return d
 }
 
+// NewOptNosqlNodeAppliance returns new OptNosqlNodeAppliance with value set to v.
+func NewOptNosqlNodeAppliance(v NosqlNodeAppliance) OptNosqlNodeAppliance {
+	return OptNosqlNodeAppliance{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlNodeAppliance is optional NosqlNodeAppliance.
+type OptNosqlNodeAppliance struct {
+	Value NosqlNodeAppliance
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlNodeAppliance was set.
+func (o OptNosqlNodeAppliance) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlNodeAppliance) Reset() {
+	var v NosqlNodeAppliance
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlNodeAppliance) SetTo(v NosqlNodeAppliance) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlNodeAppliance) Get() (v NosqlNodeAppliance, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlNodeAppliance) Or(d NosqlNodeAppliance) NosqlNodeAppliance {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlNodeApplianceZone returns new OptNosqlNodeApplianceZone with value set to v.
+func NewOptNosqlNodeApplianceZone(v NosqlNodeApplianceZone) OptNosqlNodeApplianceZone {
+	return OptNosqlNodeApplianceZone{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlNodeApplianceZone is optional NosqlNodeApplianceZone.
+type OptNosqlNodeApplianceZone struct {
+	Value NosqlNodeApplianceZone
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlNodeApplianceZone was set.
+func (o OptNosqlNodeApplianceZone) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlNodeApplianceZone) Reset() {
+	var v NosqlNodeApplianceZone
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlNodeApplianceZone) SetTo(v NosqlNodeApplianceZone) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlNodeApplianceZone) Get() (v NosqlNodeApplianceZone, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlNodeApplianceZone) Or(d NosqlNodeApplianceZone) NosqlNodeApplianceZone {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNosqlOkResponseNosql returns new OptNosqlOkResponseNosql with value set to v.
 func NewOptNosqlOkResponseNosql(v NosqlOkResponseNosql) OptNosqlOkResponseNosql {
 	return OptNosqlOkResponseNosql{
@@ -5096,52 +10351,6 @@ func (o OptNosqlOkResponseNosql) Get() (v NosqlOkResponseNosql, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNosqlOkResponseNosql) Or(d NosqlOkResponseNosql) NosqlOkResponseNosql {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptNosqlPutVersionResponseNosql returns new OptNosqlPutVersionResponseNosql with value set to v.
-func NewOptNosqlPutVersionResponseNosql(v NosqlPutVersionResponseNosql) OptNosqlPutVersionResponseNosql {
-	return OptNosqlPutVersionResponseNosql{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNosqlPutVersionResponseNosql is optional NosqlPutVersionResponseNosql.
-type OptNosqlPutVersionResponseNosql struct {
-	Value NosqlPutVersionResponseNosql
-	Set   bool
-}
-
-// IsSet returns true if OptNosqlPutVersionResponseNosql was set.
-func (o OptNosqlPutVersionResponseNosql) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNosqlPutVersionResponseNosql) Reset() {
-	var v NosqlPutVersionResponseNosql
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptNosqlPutVersionResponseNosql) SetTo(v NosqlPutVersionResponseNosql) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNosqlPutVersionResponseNosql) Get() (v NosqlPutVersionResponseNosql, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNosqlPutVersionResponseNosql) Or(d NosqlPutVersionResponseNosql) NosqlPutVersionResponseNosql {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5194,38 +10403,38 @@ func (o OptNosqlRemark) Or(d NosqlRemark) NosqlRemark {
 	return d
 }
 
-// NewOptNosqlRemarkNosql returns new OptNosqlRemarkNosql with value set to v.
-func NewOptNosqlRemarkNosql(v NosqlRemarkNosql) OptNosqlRemarkNosql {
-	return OptNosqlRemarkNosql{
+// NewOptNosqlRemarkNosqlDatabaseEngine returns new OptNosqlRemarkNosqlDatabaseEngine with value set to v.
+func NewOptNosqlRemarkNosqlDatabaseEngine(v NosqlRemarkNosqlDatabaseEngine) OptNosqlRemarkNosqlDatabaseEngine {
+	return OptNosqlRemarkNosqlDatabaseEngine{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptNosqlRemarkNosql is optional NosqlRemarkNosql.
-type OptNosqlRemarkNosql struct {
-	Value NosqlRemarkNosql
+// OptNosqlRemarkNosqlDatabaseEngine is optional NosqlRemarkNosqlDatabaseEngine.
+type OptNosqlRemarkNosqlDatabaseEngine struct {
+	Value NosqlRemarkNosqlDatabaseEngine
 	Set   bool
 }
 
-// IsSet returns true if OptNosqlRemarkNosql was set.
-func (o OptNosqlRemarkNosql) IsSet() bool { return o.Set }
+// IsSet returns true if OptNosqlRemarkNosqlDatabaseEngine was set.
+func (o OptNosqlRemarkNosqlDatabaseEngine) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptNosqlRemarkNosql) Reset() {
-	var v NosqlRemarkNosql
+func (o *OptNosqlRemarkNosqlDatabaseEngine) Reset() {
+	var v NosqlRemarkNosqlDatabaseEngine
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptNosqlRemarkNosql) SetTo(v NosqlRemarkNosql) {
+func (o *OptNosqlRemarkNosqlDatabaseEngine) SetTo(v NosqlRemarkNosqlDatabaseEngine) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptNosqlRemarkNosql) Get() (v NosqlRemarkNosql, ok bool) {
+func (o OptNosqlRemarkNosqlDatabaseEngine) Get() (v NosqlRemarkNosqlDatabaseEngine, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -5233,7 +10442,329 @@ func (o OptNosqlRemarkNosql) Get() (v NosqlRemarkNosql, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptNosqlRemarkNosql) Or(d NosqlRemarkNosql) NosqlRemarkNosql {
+func (o OptNosqlRemarkNosqlDatabaseEngine) Or(d NosqlRemarkNosqlDatabaseEngine) NosqlRemarkNosqlDatabaseEngine {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlRemarkNosqlDiskSize returns new OptNosqlRemarkNosqlDiskSize with value set to v.
+func NewOptNosqlRemarkNosqlDiskSize(v NosqlRemarkNosqlDiskSize) OptNosqlRemarkNosqlDiskSize {
+	return OptNosqlRemarkNosqlDiskSize{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlRemarkNosqlDiskSize is optional NosqlRemarkNosqlDiskSize.
+type OptNosqlRemarkNosqlDiskSize struct {
+	Value NosqlRemarkNosqlDiskSize
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlRemarkNosqlDiskSize was set.
+func (o OptNosqlRemarkNosqlDiskSize) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlRemarkNosqlDiskSize) Reset() {
+	var v NosqlRemarkNosqlDiskSize
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlRemarkNosqlDiskSize) SetTo(v NosqlRemarkNosqlDiskSize) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlRemarkNosqlDiskSize) Get() (v NosqlRemarkNosqlDiskSize, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlRemarkNosqlDiskSize) Or(d NosqlRemarkNosqlDiskSize) NosqlRemarkNosqlDiskSize {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlRemarkNosqlMemory returns new OptNosqlRemarkNosqlMemory with value set to v.
+func NewOptNosqlRemarkNosqlMemory(v NosqlRemarkNosqlMemory) OptNosqlRemarkNosqlMemory {
+	return OptNosqlRemarkNosqlMemory{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlRemarkNosqlMemory is optional NosqlRemarkNosqlMemory.
+type OptNosqlRemarkNosqlMemory struct {
+	Value NosqlRemarkNosqlMemory
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlRemarkNosqlMemory was set.
+func (o OptNosqlRemarkNosqlMemory) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlRemarkNosqlMemory) Reset() {
+	var v NosqlRemarkNosqlMemory
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlRemarkNosqlMemory) SetTo(v NosqlRemarkNosqlMemory) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlRemarkNosqlMemory) Get() (v NosqlRemarkNosqlMemory, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlRemarkNosqlMemory) Or(d NosqlRemarkNosqlMemory) NosqlRemarkNosqlMemory {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlRemarkNosqlPrimaryNodes returns new OptNosqlRemarkNosqlPrimaryNodes with value set to v.
+func NewOptNosqlRemarkNosqlPrimaryNodes(v NosqlRemarkNosqlPrimaryNodes) OptNosqlRemarkNosqlPrimaryNodes {
+	return OptNosqlRemarkNosqlPrimaryNodes{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlRemarkNosqlPrimaryNodes is optional NosqlRemarkNosqlPrimaryNodes.
+type OptNosqlRemarkNosqlPrimaryNodes struct {
+	Value NosqlRemarkNosqlPrimaryNodes
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlRemarkNosqlPrimaryNodes was set.
+func (o OptNosqlRemarkNosqlPrimaryNodes) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlRemarkNosqlPrimaryNodes) Reset() {
+	var v NosqlRemarkNosqlPrimaryNodes
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlRemarkNosqlPrimaryNodes) SetTo(v NosqlRemarkNosqlPrimaryNodes) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlRemarkNosqlPrimaryNodes) Get() (v NosqlRemarkNosqlPrimaryNodes, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlRemarkNosqlPrimaryNodes) Or(d NosqlRemarkNosqlPrimaryNodes) NosqlRemarkNosqlPrimaryNodes {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlRemarkNosqlStorage returns new OptNosqlRemarkNosqlStorage with value set to v.
+func NewOptNosqlRemarkNosqlStorage(v NosqlRemarkNosqlStorage) OptNosqlRemarkNosqlStorage {
+	return OptNosqlRemarkNosqlStorage{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlRemarkNosqlStorage is optional NosqlRemarkNosqlStorage.
+type OptNosqlRemarkNosqlStorage struct {
+	Value NosqlRemarkNosqlStorage
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlRemarkNosqlStorage was set.
+func (o OptNosqlRemarkNosqlStorage) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlRemarkNosqlStorage) Reset() {
+	var v NosqlRemarkNosqlStorage
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlRemarkNosqlStorage) SetTo(v NosqlRemarkNosqlStorage) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlRemarkNosqlStorage) Get() (v NosqlRemarkNosqlStorage, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlRemarkNosqlStorage) Or(d NosqlRemarkNosqlStorage) NosqlRemarkNosqlStorage {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlRemarkNosqlVirtualcore returns new OptNosqlRemarkNosqlVirtualcore with value set to v.
+func NewOptNosqlRemarkNosqlVirtualcore(v NosqlRemarkNosqlVirtualcore) OptNosqlRemarkNosqlVirtualcore {
+	return OptNosqlRemarkNosqlVirtualcore{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlRemarkNosqlVirtualcore is optional NosqlRemarkNosqlVirtualcore.
+type OptNosqlRemarkNosqlVirtualcore struct {
+	Value NosqlRemarkNosqlVirtualcore
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlRemarkNosqlVirtualcore was set.
+func (o OptNosqlRemarkNosqlVirtualcore) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlRemarkNosqlVirtualcore) Reset() {
+	var v NosqlRemarkNosqlVirtualcore
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlRemarkNosqlVirtualcore) SetTo(v NosqlRemarkNosqlVirtualcore) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlRemarkNosqlVirtualcore) Get() (v NosqlRemarkNosqlVirtualcore, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlRemarkNosqlVirtualcore) Or(d NosqlRemarkNosqlVirtualcore) NosqlRemarkNosqlVirtualcore {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlRepairRequestNosql returns new OptNosqlRepairRequestNosql with value set to v.
+func NewOptNosqlRepairRequestNosql(v NosqlRepairRequestNosql) OptNosqlRepairRequestNosql {
+	return OptNosqlRepairRequestNosql{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlRepairRequestNosql is optional NosqlRepairRequestNosql.
+type OptNosqlRepairRequestNosql struct {
+	Value NosqlRepairRequestNosql
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlRepairRequestNosql was set.
+func (o OptNosqlRepairRequestNosql) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlRepairRequestNosql) Reset() {
+	var v NosqlRepairRequestNosql
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlRepairRequestNosql) SetTo(v NosqlRepairRequestNosql) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlRepairRequestNosql) Get() (v NosqlRepairRequestNosql, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlRepairRequestNosql) Or(d NosqlRepairRequestNosql) NosqlRepairRequestNosql {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlRepairRequestNosqlRepairType returns new OptNosqlRepairRequestNosqlRepairType with value set to v.
+func NewOptNosqlRepairRequestNosqlRepairType(v NosqlRepairRequestNosqlRepairType) OptNosqlRepairRequestNosqlRepairType {
+	return OptNosqlRepairRequestNosqlRepairType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlRepairRequestNosqlRepairType is optional NosqlRepairRequestNosqlRepairType.
+type OptNosqlRepairRequestNosqlRepairType struct {
+	Value NosqlRepairRequestNosqlRepairType
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlRepairRequestNosqlRepairType was set.
+func (o OptNosqlRepairRequestNosqlRepairType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlRepairRequestNosqlRepairType) Reset() {
+	var v NosqlRepairRequestNosqlRepairType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlRepairRequestNosqlRepairType) SetTo(v NosqlRepairRequestNosqlRepairType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlRepairRequestNosqlRepairType) Get() (v NosqlRepairRequestNosqlRepairType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlRepairRequestNosqlRepairType) Or(d NosqlRepairRequestNosqlRepairType) NosqlRepairRequestNosqlRepairType {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5286,6 +10817,190 @@ func (o OptNosqlSettings) Or(d NosqlSettings) NosqlSettings {
 	return d
 }
 
+// NewOptNosqlSettingsRepairFull returns new OptNosqlSettingsRepairFull with value set to v.
+func NewOptNosqlSettingsRepairFull(v NosqlSettingsRepairFull) OptNosqlSettingsRepairFull {
+	return OptNosqlSettingsRepairFull{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlSettingsRepairFull is optional NosqlSettingsRepairFull.
+type OptNosqlSettingsRepairFull struct {
+	Value NosqlSettingsRepairFull
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlSettingsRepairFull was set.
+func (o OptNosqlSettingsRepairFull) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlSettingsRepairFull) Reset() {
+	var v NosqlSettingsRepairFull
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlSettingsRepairFull) SetTo(v NosqlSettingsRepairFull) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlSettingsRepairFull) Get() (v NosqlSettingsRepairFull, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlSettingsRepairFull) Or(d NosqlSettingsRepairFull) NosqlSettingsRepairFull {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlSettingsRepairIncremental returns new OptNosqlSettingsRepairIncremental with value set to v.
+func NewOptNosqlSettingsRepairIncremental(v NosqlSettingsRepairIncremental) OptNosqlSettingsRepairIncremental {
+	return OptNosqlSettingsRepairIncremental{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlSettingsRepairIncremental is optional NosqlSettingsRepairIncremental.
+type OptNosqlSettingsRepairIncremental struct {
+	Value NosqlSettingsRepairIncremental
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlSettingsRepairIncremental was set.
+func (o OptNosqlSettingsRepairIncremental) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlSettingsRepairIncremental) Reset() {
+	var v NosqlSettingsRepairIncremental
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlSettingsRepairIncremental) SetTo(v NosqlSettingsRepairIncremental) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlSettingsRepairIncremental) Get() (v NosqlSettingsRepairIncremental, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlSettingsRepairIncremental) Or(d NosqlSettingsRepairIncremental) NosqlSettingsRepairIncremental {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlStatusResponseAppliance returns new OptNosqlStatusResponseAppliance with value set to v.
+func NewOptNosqlStatusResponseAppliance(v NosqlStatusResponseAppliance) OptNosqlStatusResponseAppliance {
+	return OptNosqlStatusResponseAppliance{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlStatusResponseAppliance is optional NosqlStatusResponseAppliance.
+type OptNosqlStatusResponseAppliance struct {
+	Value NosqlStatusResponseAppliance
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlStatusResponseAppliance was set.
+func (o OptNosqlStatusResponseAppliance) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlStatusResponseAppliance) Reset() {
+	var v NosqlStatusResponseAppliance
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlStatusResponseAppliance) SetTo(v NosqlStatusResponseAppliance) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlStatusResponseAppliance) Get() (v NosqlStatusResponseAppliance, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlStatusResponseAppliance) Or(d NosqlStatusResponseAppliance) NosqlStatusResponseAppliance {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlStatusResponseApplianceSettingsResponse returns new OptNosqlStatusResponseApplianceSettingsResponse with value set to v.
+func NewOptNosqlStatusResponseApplianceSettingsResponse(v NosqlStatusResponseApplianceSettingsResponse) OptNosqlStatusResponseApplianceSettingsResponse {
+	return OptNosqlStatusResponseApplianceSettingsResponse{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlStatusResponseApplianceSettingsResponse is optional NosqlStatusResponseApplianceSettingsResponse.
+type OptNosqlStatusResponseApplianceSettingsResponse struct {
+	Value NosqlStatusResponseApplianceSettingsResponse
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlStatusResponseApplianceSettingsResponse was set.
+func (o OptNosqlStatusResponseApplianceSettingsResponse) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlStatusResponseApplianceSettingsResponse) Reset() {
+	var v NosqlStatusResponseApplianceSettingsResponse
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlStatusResponseApplianceSettingsResponse) SetTo(v NosqlStatusResponseApplianceSettingsResponse) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlStatusResponseApplianceSettingsResponse) Get() (v NosqlStatusResponseApplianceSettingsResponse, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlStatusResponseApplianceSettingsResponse) Or(d NosqlStatusResponseApplianceSettingsResponse) NosqlStatusResponseApplianceSettingsResponse {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNosqlStatusResponseApplianceSettingsResponseNosql returns new OptNosqlStatusResponseApplianceSettingsResponseNosql with value set to v.
 func NewOptNosqlStatusResponseApplianceSettingsResponseNosql(v NosqlStatusResponseApplianceSettingsResponseNosql) OptNosqlStatusResponseApplianceSettingsResponseNosql {
 	return OptNosqlStatusResponseApplianceSettingsResponseNosql{
@@ -5326,6 +11041,236 @@ func (o OptNosqlStatusResponseApplianceSettingsResponseNosql) Get() (v NosqlStat
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNosqlStatusResponseApplianceSettingsResponseNosql) Or(d NosqlStatusResponseApplianceSettingsResponseNosql) NosqlStatusResponseApplianceSettingsResponseNosql {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes returns new OptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes with value set to v.
+func NewOptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes(v NosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes) OptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes {
+	return OptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes is optional NosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes.
+type OptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes struct {
+	Value NosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes was set.
+func (o OptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes) Reset() {
+	var v NosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes) SetTo(v NosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes) Get() (v NosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes) Or(d NosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes) NosqlStatusResponseApplianceSettingsResponseNosqlPrimaryNodes {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlUpdateRequestApplianceSettingsRepairFull returns new OptNosqlUpdateRequestApplianceSettingsRepairFull with value set to v.
+func NewOptNosqlUpdateRequestApplianceSettingsRepairFull(v NosqlUpdateRequestApplianceSettingsRepairFull) OptNosqlUpdateRequestApplianceSettingsRepairFull {
+	return OptNosqlUpdateRequestApplianceSettingsRepairFull{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlUpdateRequestApplianceSettingsRepairFull is optional NosqlUpdateRequestApplianceSettingsRepairFull.
+type OptNosqlUpdateRequestApplianceSettingsRepairFull struct {
+	Value NosqlUpdateRequestApplianceSettingsRepairFull
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlUpdateRequestApplianceSettingsRepairFull was set.
+func (o OptNosqlUpdateRequestApplianceSettingsRepairFull) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlUpdateRequestApplianceSettingsRepairFull) Reset() {
+	var v NosqlUpdateRequestApplianceSettingsRepairFull
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlUpdateRequestApplianceSettingsRepairFull) SetTo(v NosqlUpdateRequestApplianceSettingsRepairFull) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlUpdateRequestApplianceSettingsRepairFull) Get() (v NosqlUpdateRequestApplianceSettingsRepairFull, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlUpdateRequestApplianceSettingsRepairFull) Or(d NosqlUpdateRequestApplianceSettingsRepairFull) NosqlUpdateRequestApplianceSettingsRepairFull {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlUpdateRequestApplianceSettingsRepairIncremental returns new OptNosqlUpdateRequestApplianceSettingsRepairIncremental with value set to v.
+func NewOptNosqlUpdateRequestApplianceSettingsRepairIncremental(v NosqlUpdateRequestApplianceSettingsRepairIncremental) OptNosqlUpdateRequestApplianceSettingsRepairIncremental {
+	return OptNosqlUpdateRequestApplianceSettingsRepairIncremental{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlUpdateRequestApplianceSettingsRepairIncremental is optional NosqlUpdateRequestApplianceSettingsRepairIncremental.
+type OptNosqlUpdateRequestApplianceSettingsRepairIncremental struct {
+	Value NosqlUpdateRequestApplianceSettingsRepairIncremental
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlUpdateRequestApplianceSettingsRepairIncremental was set.
+func (o OptNosqlUpdateRequestApplianceSettingsRepairIncremental) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlUpdateRequestApplianceSettingsRepairIncremental) Reset() {
+	var v NosqlUpdateRequestApplianceSettingsRepairIncremental
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlUpdateRequestApplianceSettingsRepairIncremental) SetTo(v NosqlUpdateRequestApplianceSettingsRepairIncremental) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlUpdateRequestApplianceSettingsRepairIncremental) Get() (v NosqlUpdateRequestApplianceSettingsRepairIncremental, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlUpdateRequestApplianceSettingsRepairIncremental) Or(d NosqlUpdateRequestApplianceSettingsRepairIncremental) NosqlUpdateRequestApplianceSettingsRepairIncremental {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlVersion returns new OptNosqlVersion with value set to v.
+func NewOptNosqlVersion(v NosqlVersion) OptNosqlVersion {
+	return OptNosqlVersion{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlVersion is optional NosqlVersion.
+type OptNosqlVersion struct {
+	Value NosqlVersion
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlVersion was set.
+func (o OptNosqlVersion) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlVersion) Reset() {
+	var v NosqlVersion
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlVersion) SetTo(v NosqlVersion) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlVersion) Get() (v NosqlVersion, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlVersion) Or(d NosqlVersion) NosqlVersion {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqldbNodeStatusNodeType returns new OptNosqldbNodeStatusNodeType with value set to v.
+func NewOptNosqldbNodeStatusNodeType(v NosqldbNodeStatusNodeType) OptNosqldbNodeStatusNodeType {
+	return OptNosqldbNodeStatusNodeType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqldbNodeStatusNodeType is optional NosqldbNodeStatusNodeType.
+type OptNosqldbNodeStatusNodeType struct {
+	Value NosqldbNodeStatusNodeType
+	Set   bool
+}
+
+// IsSet returns true if OptNosqldbNodeStatusNodeType was set.
+func (o OptNosqldbNodeStatusNodeType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqldbNodeStatusNodeType) Reset() {
+	var v NosqldbNodeStatusNodeType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqldbNodeStatusNodeType) SetTo(v NosqldbNodeStatusNodeType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqldbNodeStatusNodeType) Get() (v NosqldbNodeStatusNodeType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqldbNodeStatusNodeType) Or(d NosqldbNodeStatusNodeType) NosqldbNodeStatusNodeType {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5610,10 +11555,12 @@ func (o OptSuccess) Or(d Success) Success {
 
 type Password string
 
-// プラン.
+// プラン
+// **新規作成時・ノード追加時必須**.
 // Ref: #/components/schemas/Plan
 type Plan struct {
-	// プランID.
+	// プランID
+	// **新規作成時・ノード追加時必須**.
 	ID OptInt `json:"ID"`
 }
 
@@ -5698,6 +11645,14 @@ func (s *PutParameterResponseNosql) SetParameters(val []NosqlPutParameter) {
 	s.Parameters = val
 }
 
+type RecoverNoSQLNodeAccepted SuccessResponse
+
+func (*RecoverNoSQLNodeAccepted) recoverNoSQLNodeRes() {}
+
+type RecoverNoSQLNodeOK SuccessResponse
+
+func (*RecoverNoSQLNodeOK) recoverNoSQLNodeRes() {}
+
 // エラーレスポンス.
 type ServerErrorResponse struct {
 	// エラーのレスポンス(true:エラー).
@@ -5770,18 +11725,84 @@ func (*ServerErrorResponse) deleteBackupRes()           {}
 func (*ServerErrorResponse) deleteDBRes()               {}
 func (*ServerErrorResponse) getBackupByApplianceIDRes() {}
 func (*ServerErrorResponse) getDBRes()                  {}
+func (*ServerErrorResponse) getNoSQLNodeHealthRes()     {}
 func (*ServerErrorResponse) getParameterRes()           {}
 func (*ServerErrorResponse) getVersionRes()             {}
 func (*ServerErrorResponse) listDBRes()                 {}
+func (*ServerErrorResponse) postNoSQLRepairRes()        {}
 func (*ServerErrorResponse) putAppliancePowerRes()      {}
 func (*ServerErrorResponse) putParameterRes()           {}
 func (*ServerErrorResponse) putVersionRes()             {}
+func (*ServerErrorResponse) recoverNoSQLNodeRes()       {}
 func (*ServerErrorResponse) restoreBackupRes()          {}
 func (*ServerErrorResponse) updateDBRes()               {}
 
 type ServiceClass string
 
-type Success bool
+// Ref: #/components/schemas/Success
+// Success represents sum type.
+type Success struct {
+	Type   SuccessType // switch on this field
+	Bool   bool
+	String string
+}
+
+// SuccessType is oneOf type of Success.
+type SuccessType string
+
+// Possible values for SuccessType.
+const (
+	BoolSuccess   SuccessType = "bool"
+	StringSuccess SuccessType = "string"
+)
+
+// IsBool reports whether Success is bool.
+func (s Success) IsBool() bool { return s.Type == BoolSuccess }
+
+// IsString reports whether Success is string.
+func (s Success) IsString() bool { return s.Type == StringSuccess }
+
+// SetBool sets Success to bool.
+func (s *Success) SetBool(v bool) {
+	s.Type = BoolSuccess
+	s.Bool = v
+}
+
+// GetBool returns bool and true boolean if Success is bool.
+func (s Success) GetBool() (v bool, ok bool) {
+	if !s.IsBool() {
+		return v, false
+	}
+	return s.Bool, true
+}
+
+// NewBoolSuccess returns new Success from bool.
+func NewBoolSuccess(v bool) Success {
+	var s Success
+	s.SetBool(v)
+	return s
+}
+
+// SetString sets Success to string.
+func (s *Success) SetString(v string) {
+	s.Type = StringSuccess
+	s.String = v
+}
+
+// GetString returns string and true boolean if Success is string.
+func (s Success) GetString() (v string, ok bool) {
+	if !s.IsString() {
+		return v, false
+	}
+	return s.String, true
+}
+
+// NewStringSuccess returns new Success from string.
+func NewStringSuccess(v string) Success {
+	var s Success
+	s.SetString(v)
+	return s
+}
 
 // Ref: #/components/schemas/SuccessResponse
 type SuccessResponse struct {
@@ -5886,11 +11907,14 @@ func (*UnauthorizedResponse) deleteBackupRes()           {}
 func (*UnauthorizedResponse) deleteDBRes()               {}
 func (*UnauthorizedResponse) getBackupByApplianceIDRes() {}
 func (*UnauthorizedResponse) getDBRes()                  {}
+func (*UnauthorizedResponse) getNoSQLNodeHealthRes()     {}
 func (*UnauthorizedResponse) getParameterRes()           {}
 func (*UnauthorizedResponse) getVersionRes()             {}
 func (*UnauthorizedResponse) listDBRes()                 {}
+func (*UnauthorizedResponse) postNoSQLRepairRes()        {}
 func (*UnauthorizedResponse) putAppliancePowerRes()      {}
 func (*UnauthorizedResponse) putParameterRes()           {}
 func (*UnauthorizedResponse) putVersionRes()             {}
+func (*UnauthorizedResponse) recoverNoSQLNodeRes()       {}
 func (*UnauthorizedResponse) restoreBackupRes()          {}
 func (*UnauthorizedResponse) updateDBRes()               {}

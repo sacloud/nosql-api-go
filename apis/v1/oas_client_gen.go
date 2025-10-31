@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/go-faster/errors"
-
 	"github.com/ogen-go/ogen/conv"
 	ht "github.com/ogen-go/ogen/http"
 	"github.com/ogen-go/ogen/uri"
@@ -23,44 +22,63 @@ func trimTrailingSlashes(u *url.URL) {
 type Invoker interface {
 	// ConfirmStatusDB invokes ConfirmStatusDB operation.
 	//
-	// 対象のNoSQLのCassandraの起動状態を取得します。.
+	// 対象のNoSQLの情報を取得します。
+	// 追加ノードのアプライアンスIDを指定して呼び出した場合、返却される情報はプライマリノードを指定した場合と同一の内容となります。.
 	//
 	// GET /appliance/{applianceID}/status
 	ConfirmStatusDB(ctx context.Context, params ConfirmStatusDBParams) (ConfirmStatusDBRes, error)
 	// CreateBackup invokes createBackup operation.
 	//
-	// 対象NoSQLのバックアップ作成を開始します。
-	// バックアップデータの確認はNoSQLバックアップ一覧取得APIにて行ってください。.
+	// 対象のNoSQLに対してバックアップ作成を行います。
+	// 追加ノードのアプライアンスIDを指定してバックアップを作成することはできません。
+	// プライマリノードのアプライアンスIDを指定することで、追加ノードに対してもバックアップが作成されます。.
 	//
 	// POST /appliance/{applianceID}/nosql/backup
 	CreateBackup(ctx context.Context, params CreateBackupParams) (CreateBackupRes, error)
 	// CreateDB invokes CreateDB operation.
 	//
-	// NoSQLの作成を行います。.
+	// NoSQLの新規作成および既存NoSQLへのノード追加を行います。
+	// 新規作成では3台構成で作成されます。
+	// ノード追加では、2台ずつ追加され、NoSQL全体で最大9台まで構成可能です。
+	// 新規作成時とノード追加時では、必要となる項目が異なります。
+	// 各操作ごとの必須項目は、スキーマ定義内の各プロパティの説明欄に明記していますので、詳細はそちらをご参照ください。
+	// - **新規作成時必須**: 新規作成の際に必須の項目
+	// - **ノード追加時必須**: ノード追加の際に必須の項目
+	// - **新規作成時・ノード追加時必須**:
+	// 新規作成・ノード追加時に必須の項目
+	// ※ノード追加では、既存NoSQLの設定情報（**ノード追加時必須**以外の項目）と一致させるか未指定である必要があります。.
 	//
 	// POST /appliance
 	CreateDB(ctx context.Context, request *NosqlCreateRequest) (CreateDBRes, error)
 	// DeleteAppliancePower invokes DeleteAppliancePower operation.
 	//
-	// 対象のNoSQLを停止する。.
+	// 対象のNoSQLを停止します。
+	// プライマリノードのアプライアンスIDを指定しての停止では、ノード追加したデータは停止しません。
+	// ノード追加している場合は、追加ノードのアプライアンスIDを指定して、個別に停止する必要があります。.
 	//
 	// DELETE /appliance/{applianceID}/power
 	DeleteAppliancePower(ctx context.Context, params DeleteAppliancePowerParams) (DeleteAppliancePowerRes, error)
 	// DeleteBackup invokes deleteBackup operation.
 	//
-	// 対象NoSQLのバックアップ削除を開始します。.
+	// 対象のNoSQLのバックアップ削除を開始します。
+	// バックアップデータの確認はNoSQLバックアップ一覧取得APIにて行ってください。
+	// 追加ノードのアプライアンスIDを指定してバックアップを削除することはできません。
+	// プライマリノードのアプライアンスIDとバックアップIDを指定することで、追加ノードに対してもバックアップの削除が適用されます。.
 	//
 	// DELETE /appliance/{applianceID}/nosql/backup/{backupID}
 	DeleteBackup(ctx context.Context, params DeleteBackupParams) (DeleteBackupRes, error)
 	// DeleteDB invokes DeleteDB operation.
 	//
-	// 対象のNoSQLを削除します。.
+	// 対象のNoSQLを削除します。
+	// プライマリノードのアプライアンスIDを指定しての削除ではノード追加したデータは削除されません。
+	// ノード追加している場合は、追加ノードのアプライアンスIDを指定して、個別に削除する必要があります。.
 	//
 	// DELETE /appliance/{applianceID}
 	DeleteDB(ctx context.Context, params DeleteDBParams) (DeleteDBRes, error)
 	// GetBackupByApplianceID invokes GetBackupByApplianceID operation.
 	//
-	// 対象のNoSQLのバックアップを取得します。.
+	// 対象NoSQLのバックアップ情報を取得します。
+	// 追加ノードのアプライアンスIDを指定して呼び出した場合、返却される情報はプライマリノードを指定した場合と同一の内容となります。.
 	//
 	// GET /appliance/{applianceID}/nosql/backup
 	GetBackupByApplianceID(ctx context.Context, params GetBackupByApplianceIDParams) (GetBackupByApplianceIDRes, error)
@@ -70,15 +88,23 @@ type Invoker interface {
 	//
 	// GET /appliance/{applianceID}
 	GetDB(ctx context.Context, params GetDBParams) (GetDBRes, error)
+	// GetNoSQLNodeHealth invokes GetNoSQLNodeHealth operation.
+	//
+	// 対象のNoSQL全体の起動状態を確認します。.
+	//
+	// GET /appliance/{applianceID}/nosql/nodes/health
+	GetNoSQLNodeHealth(ctx context.Context, params GetNoSQLNodeHealthParams) (GetNoSQLNodeHealthRes, error)
 	// GetParameter invokes getParameter operation.
 	//
-	// 対象のNoSQLのパラメータを取得します。.
+	// 対象のNoSQLのパラメータ設定情報を取得します。
+	// 追加ノードのアプライアンスIDを指定して呼び出した場合、返却される情報はプライマリノードを指定した場合と同一の内容となります。.
 	//
 	// GET /appliance/{applianceID}/nosql/parameter
 	GetParameter(ctx context.Context, params GetParameterParams) (GetParameterRes, error)
 	// GetVersion invokes getVersion operation.
 	//
-	// 対象のNoSQLの更新可能なバージョンを取得します。.
+	// 対象のNoSQLの更新可能なバージョンを取得します。
+	// 追加ノードのアプライアンスIDを指定して呼び出した場合、返却される情報はプライマリノードを指定した場合と同一の内容となります。.
 	//
 	// GET /appliance/{applianceID}/nosql/version
 	GetVersion(ctx context.Context, params GetVersionParams) (GetVersionRes, error)
@@ -88,40 +114,71 @@ type Invoker interface {
 	//
 	// GET /appliance
 	ListDB(ctx context.Context, params ListDBParams) (ListDBRes, error)
+	// PostNoSQLRepair invokes PostNoSQLRepair operation.
+	//
+	// プライマリノードを対象にNoSQLのリペアを開始します。
+	// 「増分リペア」または「完全リペア」を実行します。<br>
+	// リペアとはデータの整合性（一貫性）を維持するために、複数のノード間で発生したデータのずれを検出・修復するメンテナンス作業です。<br>
+	// 増分リペアは、前回のリペア実行以降に更新されたデータのみを対象に修復を行います。<br>
+	// 完全リペアは、クラスタ内のすべてのデータを対象に修復を行います。<br>
+	// 追加ノードのアプライアンスIDを指定してリペアを実行することはできません。
+	// プライマリノードのアプライアンスIDを指定することで、追加ノードに対してもリペアが実行されます。.
+	//
+	// POST /appliance/{applianceID}/nosql/repair
+	PostNoSQLRepair(ctx context.Context, request *NosqlRepairRequest, params PostNoSQLRepairParams) (PostNoSQLRepairRes, error)
 	// PutAppliancePower invokes PutAppliancePower operation.
 	//
-	// NoSQLを起動する。.
+	// 対象のNoSQLを起動します。
+	// プライマリノードのアプライアンスIDを指定しての起動では、ノード追加したデータは起動しません。
+	// ノード追加している場合は、追加ノードのアプライアンスIDを指定して、個別に起動する必要があります。.
 	//
 	// PUT /appliance/{applianceID}/power
 	PutAppliancePower(ctx context.Context, params PutAppliancePowerParams) (PutAppliancePowerRes, error)
 	// PutParameter invokes putParameter operation.
 	//
-	// 対象のNoSQLのパラメータを反映します。.
+	// 対象のNoSQLに対してのパラメータ設定を行います。
+	// 追加ノードのアプライアンスIDを指定してパラメータ設定を行うことはできません。
+	// プライマリノードのアプライアンスIDを指定することで、追加ノードに対してもパラメータ設定を行うことができます。.
 	//
 	// PUT /appliance/{applianceID}/nosql/parameter
 	PutParameter(ctx context.Context, request *PutParameterRequest, params PutParameterParams) (PutParameterRes, error)
 	// PutVersion invokes putVersion operation.
 	//
-	// 対象のNoSQLのバージョンを更新します。.
+	// 対象のNoSQLに対してのバージョン更新を行います。
+	// 追加ノードのアプライアンスIDを指定してバージョン更新を行うことはできません。
+	// プライマリノードのアプライアンスIDを指定することで、追加ノードに対してもバージョン更新を行うことができます。.
 	//
 	// PUT /appliance/{applianceID}/nosql/version
 	PutVersion(ctx context.Context, request *NosqlPutVersionRequest, params PutVersionParams) (PutVersionRes, error)
+	// RecoverNoSQLNode invokes RecoverNoSQLNode operation.
+	//
+	// 対象のNoSQLのノードを復旧します。
+	// 起動状態を確認し、停止している場合は、再起動を試みます。.
+	//
+	// POST /appliance/{applianceID}/nosql/nodes/recover
+	RecoverNoSQLNode(ctx context.Context, params RecoverNoSQLNodeParams) (RecoverNoSQLNodeRes, error)
 	// RestoreBackup invokes restoreBackup operation.
 	//
-	// 対象NoSQLのバックアップ復元を開始します。
-	// バックアップデータの確認はNoSQLバックアップ一覧取得APIにて行ってください。.
+	// 対象のNoSQLに対してバックアップ復元を開始します。
+	// バックアップデータの確認はNoSQLバックアップ一覧取得APIにて行ってください。
+	// 追加ノードのアプライアンスIDを指定してバックアップを復元することはできません。
+	// プライマリノードのアプライアンスIDとバックアップIDを指定することで、追加ノードに対してもバックアップの復元が適用されます。.
 	//
 	// PUT /appliance/{applianceID}/nosql/backup/{backupID}
 	RestoreBackup(ctx context.Context, params RestoreBackupParams) (RestoreBackupRes, error)
 	// UpdateConfigDB invokes UpdateConfigDB operation.
 	//
-	// 対象のNoSQLを反映します。.
+	// 対象のNoSQLに対しての更新を反映します。
+	// 追加ノードのアプライアンスIDを指定して反映処理をすることはできません。
+	// プライマリノードのアプライアンスIDを指定することで、追加ノードに対しても更新が反映されます。.
 	//
 	// PUT /appliance/{applianceID}/config
 	UpdateConfigDB(ctx context.Context, params UpdateConfigDBParams) (UpdateConfigDBRes, error)
 	// UpdateDB invokes UpdateDB operation.
 	//
-	// 対象のNoSQLを更新します。.
+	// 対象のNoSQLに対しての更新を行います。
+	// 追加ノードのアプライアンスIDを指定して更新を行うことはできません。
+	// プライマリノードのアプライアンスIDを指定することで、追加ノードに対しても更新が適用されます。.
 	//
 	// PUT /appliance/{applianceID}
 	UpdateDB(ctx context.Context, request *NosqlUpdateRequest, params UpdateDBParams) (UpdateDBRes, error)
@@ -168,7 +225,8 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 
 // ConfirmStatusDB invokes ConfirmStatusDB operation.
 //
-// 対象のNoSQLのCassandraの起動状態を取得します。.
+// 対象のNoSQLの情報を取得します。
+// 追加ノードのアプライアンスIDを指定して呼び出した場合、返却される情報はプライマリノードを指定した場合と同一の内容となります。.
 //
 // GET /appliance/{applianceID}/status
 func (c *Client) ConfirmStatusDB(ctx context.Context, params ConfirmStatusDBParams) (ConfirmStatusDBRes, error) {
@@ -223,8 +281,9 @@ func (c *Client) sendConfirmStatusDB(ctx context.Context, params ConfirmStatusDB
 
 // CreateBackup invokes createBackup operation.
 //
-// 対象NoSQLのバックアップ作成を開始します。
-// バックアップデータの確認はNoSQLバックアップ一覧取得APIにて行ってください。.
+// 対象のNoSQLに対してバックアップ作成を行います。
+// 追加ノードのアプライアンスIDを指定してバックアップを作成することはできません。
+// プライマリノードのアプライアンスIDを指定することで、追加ノードに対してもバックアップが作成されます。.
 //
 // POST /appliance/{applianceID}/nosql/backup
 func (c *Client) CreateBackup(ctx context.Context, params CreateBackupParams) (CreateBackupRes, error) {
@@ -279,7 +338,16 @@ func (c *Client) sendCreateBackup(ctx context.Context, params CreateBackupParams
 
 // CreateDB invokes CreateDB operation.
 //
-// NoSQLの作成を行います。.
+// NoSQLの新規作成および既存NoSQLへのノード追加を行います。
+// 新規作成では3台構成で作成されます。
+// ノード追加では、2台ずつ追加され、NoSQL全体で最大9台まで構成可能です。
+// 新規作成時とノード追加時では、必要となる項目が異なります。
+// 各操作ごとの必須項目は、スキーマ定義内の各プロパティの説明欄に明記していますので、詳細はそちらをご参照ください。
+// - **新規作成時必須**: 新規作成の際に必須の項目
+// - **ノード追加時必須**: ノード追加の際に必須の項目
+// - **新規作成時・ノード追加時必須**:
+// 新規作成・ノード追加時に必須の項目
+// ※ノード追加では、既存NoSQLの設定情報（**ノード追加時必須**以外の項目）と一致させるか未指定である必要があります。.
 //
 // POST /appliance
 func (c *Client) CreateDB(ctx context.Context, request *NosqlCreateRequest) (CreateDBRes, error) {
@@ -327,7 +395,9 @@ func (c *Client) sendCreateDB(ctx context.Context, request *NosqlCreateRequest) 
 
 // DeleteAppliancePower invokes DeleteAppliancePower operation.
 //
-// 対象のNoSQLを停止する。.
+// 対象のNoSQLを停止します。
+// プライマリノードのアプライアンスIDを指定しての停止では、ノード追加したデータは停止しません。
+// ノード追加している場合は、追加ノードのアプライアンスIDを指定して、個別に停止する必要があります。.
 //
 // DELETE /appliance/{applianceID}/power
 func (c *Client) DeleteAppliancePower(ctx context.Context, params DeleteAppliancePowerParams) (DeleteAppliancePowerRes, error) {
@@ -382,7 +452,10 @@ func (c *Client) sendDeleteAppliancePower(ctx context.Context, params DeleteAppl
 
 // DeleteBackup invokes deleteBackup operation.
 //
-// 対象NoSQLのバックアップ削除を開始します。.
+// 対象のNoSQLのバックアップ削除を開始します。
+// バックアップデータの確認はNoSQLバックアップ一覧取得APIにて行ってください。
+// 追加ノードのアプライアンスIDを指定してバックアップを削除することはできません。
+// プライマリノードのアプライアンスIDとバックアップIDを指定することで、追加ノードに対してもバックアップの削除が適用されます。.
 //
 // DELETE /appliance/{applianceID}/nosql/backup/{backupID}
 func (c *Client) DeleteBackup(ctx context.Context, params DeleteBackupParams) (DeleteBackupRes, error) {
@@ -455,7 +528,9 @@ func (c *Client) sendDeleteBackup(ctx context.Context, params DeleteBackupParams
 
 // DeleteDB invokes DeleteDB operation.
 //
-// 対象のNoSQLを削除します。.
+// 対象のNoSQLを削除します。
+// プライマリノードのアプライアンスIDを指定しての削除ではノード追加したデータは削除されません。
+// ノード追加している場合は、追加ノードのアプライアンスIDを指定して、個別に削除する必要があります。.
 //
 // DELETE /appliance/{applianceID}
 func (c *Client) DeleteDB(ctx context.Context, params DeleteDBParams) (DeleteDBRes, error) {
@@ -509,7 +584,8 @@ func (c *Client) sendDeleteDB(ctx context.Context, params DeleteDBParams) (res D
 
 // GetBackupByApplianceID invokes GetBackupByApplianceID operation.
 //
-// 対象のNoSQLのバックアップを取得します。.
+// 対象NoSQLのバックアップ情報を取得します。
+// 追加ノードのアプライアンスIDを指定して呼び出した場合、返却される情報はプライマリノードを指定した場合と同一の内容となります。.
 //
 // GET /appliance/{applianceID}/nosql/backup
 func (c *Client) GetBackupByApplianceID(ctx context.Context, params GetBackupByApplianceIDParams) (GetBackupByApplianceIDRes, error) {
@@ -616,9 +692,65 @@ func (c *Client) sendGetDB(ctx context.Context, params GetDBParams) (res GetDBRe
 	return result, nil
 }
 
+// GetNoSQLNodeHealth invokes GetNoSQLNodeHealth operation.
+//
+// 対象のNoSQL全体の起動状態を確認します。.
+//
+// GET /appliance/{applianceID}/nosql/nodes/health
+func (c *Client) GetNoSQLNodeHealth(ctx context.Context, params GetNoSQLNodeHealthParams) (GetNoSQLNodeHealthRes, error) {
+	res, err := c.sendGetNoSQLNodeHealth(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetNoSQLNodeHealth(ctx context.Context, params GetNoSQLNodeHealthParams) (res GetNoSQLNodeHealthRes, err error) {
+
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/appliance/"
+	{
+		// Encode "applianceID" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "applianceID",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.ApplianceID))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/nosql/nodes/health"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	defer resp.Body.Close()
+
+	result, err := decodeGetNoSQLNodeHealthResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetParameter invokes getParameter operation.
 //
-// 対象のNoSQLのパラメータを取得します。.
+// 対象のNoSQLのパラメータ設定情報を取得します。
+// 追加ノードのアプライアンスIDを指定して呼び出した場合、返却される情報はプライマリノードを指定した場合と同一の内容となります。.
 //
 // GET /appliance/{applianceID}/nosql/parameter
 func (c *Client) GetParameter(ctx context.Context, params GetParameterParams) (GetParameterRes, error) {
@@ -673,7 +805,8 @@ func (c *Client) sendGetParameter(ctx context.Context, params GetParameterParams
 
 // GetVersion invokes getVersion operation.
 //
-// 対象のNoSQLの更新可能なバージョンを取得します。.
+// 対象のNoSQLの更新可能なバージョンを取得します。
+// 追加ノードのアプライアンスIDを指定して呼び出した場合、返却される情報はプライマリノードを指定した場合と同一の内容となります。.
 //
 // GET /appliance/{applianceID}/nosql/version
 func (c *Client) GetVersion(ctx context.Context, params GetVersionParams) (GetVersionRes, error) {
@@ -740,8 +873,25 @@ func (c *Client) sendListDB(ctx context.Context, params ListDBParams) (res ListD
 
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/appliance?{\"Filter\":{\"Class\":\"nosql\"}}"
+	pathParts[0] = "/appliance"
 	uri.AddPathParts(u, pathParts[:]...)
+
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "Filter.Class" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "Filter.Class",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.StringToString(params.FilterClass))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	r, err := ht.NewRequest(ctx, "GET", u)
 	if err != nil {
@@ -762,9 +912,84 @@ func (c *Client) sendListDB(ctx context.Context, params ListDBParams) (res ListD
 	return result, nil
 }
 
+// PostNoSQLRepair invokes PostNoSQLRepair operation.
+//
+// プライマリノードを対象にNoSQLのリペアを開始します。
+// 「増分リペア」または「完全リペア」を実行します。<br>
+// リペアとはデータの整合性（一貫性）を維持するために、複数のノード間で発生したデータのずれを検出・修復するメンテナンス作業です。<br>
+// 増分リペアは、前回のリペア実行以降に更新されたデータのみを対象に修復を行います。<br>
+// 完全リペアは、クラスタ内のすべてのデータを対象に修復を行います。<br>
+// 追加ノードのアプライアンスIDを指定してリペアを実行することはできません。
+// プライマリノードのアプライアンスIDを指定することで、追加ノードに対してもリペアが実行されます。.
+//
+// POST /appliance/{applianceID}/nosql/repair
+func (c *Client) PostNoSQLRepair(ctx context.Context, request *NosqlRepairRequest, params PostNoSQLRepairParams) (PostNoSQLRepairRes, error) {
+	res, err := c.sendPostNoSQLRepair(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendPostNoSQLRepair(ctx context.Context, request *NosqlRepairRequest, params PostNoSQLRepairParams) (res PostNoSQLRepairRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/appliance/"
+	{
+		// Encode "applianceID" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "applianceID",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.ApplianceID))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/nosql/repair"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodePostNoSQLRepairRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	defer resp.Body.Close()
+
+	result, err := decodePostNoSQLRepairResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // PutAppliancePower invokes PutAppliancePower operation.
 //
-// NoSQLを起動する。.
+// 対象のNoSQLを起動します。
+// プライマリノードのアプライアンスIDを指定しての起動では、ノード追加したデータは起動しません。
+// ノード追加している場合は、追加ノードのアプライアンスIDを指定して、個別に起動する必要があります。.
 //
 // PUT /appliance/{applianceID}/power
 func (c *Client) PutAppliancePower(ctx context.Context, params PutAppliancePowerParams) (PutAppliancePowerRes, error) {
@@ -819,7 +1044,9 @@ func (c *Client) sendPutAppliancePower(ctx context.Context, params PutApplianceP
 
 // PutParameter invokes putParameter operation.
 //
-// 対象のNoSQLのパラメータを反映します。.
+// 対象のNoSQLに対してのパラメータ設定を行います。
+// 追加ノードのアプライアンスIDを指定してパラメータ設定を行うことはできません。
+// プライマリノードのアプライアンスIDを指定することで、追加ノードに対してもパラメータ設定を行うことができます。.
 //
 // PUT /appliance/{applianceID}/nosql/parameter
 func (c *Client) PutParameter(ctx context.Context, request *PutParameterRequest, params PutParameterParams) (PutParameterRes, error) {
@@ -877,7 +1104,9 @@ func (c *Client) sendPutParameter(ctx context.Context, request *PutParameterRequ
 
 // PutVersion invokes putVersion operation.
 //
-// 対象のNoSQLのバージョンを更新します。.
+// 対象のNoSQLに対してのバージョン更新を行います。
+// 追加ノードのアプライアンスIDを指定してバージョン更新を行うことはできません。
+// プライマリノードのアプライアンスIDを指定することで、追加ノードに対してもバージョン更新を行うことができます。.
 //
 // PUT /appliance/{applianceID}/nosql/version
 func (c *Client) PutVersion(ctx context.Context, request *NosqlPutVersionRequest, params PutVersionParams) (PutVersionRes, error) {
@@ -886,6 +1115,15 @@ func (c *Client) PutVersion(ctx context.Context, request *NosqlPutVersionRequest
 }
 
 func (c *Client) sendPutVersion(ctx context.Context, request *NosqlPutVersionRequest, params PutVersionParams) (res PutVersionRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
@@ -933,10 +1171,68 @@ func (c *Client) sendPutVersion(ctx context.Context, request *NosqlPutVersionReq
 	return result, nil
 }
 
+// RecoverNoSQLNode invokes RecoverNoSQLNode operation.
+//
+// 対象のNoSQLのノードを復旧します。
+// 起動状態を確認し、停止している場合は、再起動を試みます。.
+//
+// POST /appliance/{applianceID}/nosql/nodes/recover
+func (c *Client) RecoverNoSQLNode(ctx context.Context, params RecoverNoSQLNodeParams) (RecoverNoSQLNodeRes, error) {
+	res, err := c.sendRecoverNoSQLNode(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendRecoverNoSQLNode(ctx context.Context, params RecoverNoSQLNodeParams) (res RecoverNoSQLNodeRes, err error) {
+
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/appliance/"
+	{
+		// Encode "applianceID" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "applianceID",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.ApplianceID))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/nosql/nodes/recover"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	defer resp.Body.Close()
+
+	result, err := decodeRecoverNoSQLNodeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // RestoreBackup invokes restoreBackup operation.
 //
-// 対象NoSQLのバックアップ復元を開始します。
-// バックアップデータの確認はNoSQLバックアップ一覧取得APIにて行ってください。.
+// 対象のNoSQLに対してバックアップ復元を開始します。
+// バックアップデータの確認はNoSQLバックアップ一覧取得APIにて行ってください。
+// 追加ノードのアプライアンスIDを指定してバックアップを復元することはできません。
+// プライマリノードのアプライアンスIDとバックアップIDを指定することで、追加ノードに対してもバックアップの復元が適用されます。.
 //
 // PUT /appliance/{applianceID}/nosql/backup/{backupID}
 func (c *Client) RestoreBackup(ctx context.Context, params RestoreBackupParams) (RestoreBackupRes, error) {
@@ -1009,7 +1305,9 @@ func (c *Client) sendRestoreBackup(ctx context.Context, params RestoreBackupPara
 
 // UpdateConfigDB invokes UpdateConfigDB operation.
 //
-// 対象のNoSQLを反映します。.
+// 対象のNoSQLに対しての更新を反映します。
+// 追加ノードのアプライアンスIDを指定して反映処理をすることはできません。
+// プライマリノードのアプライアンスIDを指定することで、追加ノードに対しても更新が反映されます。.
 //
 // PUT /appliance/{applianceID}/config
 func (c *Client) UpdateConfigDB(ctx context.Context, params UpdateConfigDBParams) (UpdateConfigDBRes, error) {
@@ -1064,7 +1362,9 @@ func (c *Client) sendUpdateConfigDB(ctx context.Context, params UpdateConfigDBPa
 
 // UpdateDB invokes UpdateDB operation.
 //
-// 対象のNoSQLを更新します。.
+// 対象のNoSQLに対しての更新を行います。
+// 追加ノードのアプライアンスIDを指定して更新を行うことはできません。
+// プライマリノードのアプライアンスIDを指定することで、追加ノードに対しても更新が適用されます。.
 //
 // PUT /appliance/{applianceID}
 func (c *Client) UpdateDB(ctx context.Context, request *NosqlUpdateRequest, params UpdateDBParams) (UpdateDBRes, error) {
