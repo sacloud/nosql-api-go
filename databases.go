@@ -22,9 +22,9 @@ import (
 )
 
 type DatabaseAPI interface {
-	List(ctx context.Context) ([]v1.NosqlAppliance, error)
+	List(ctx context.Context) ([]v1.GetNosqlAppliance, error)
 	Create(ctx context.Context, request v1.NosqlCreateRequestAppliance) (*v1.NosqlCreateResponse, error)
-	Read(ctx context.Context, id string) (*v1.NosqlAppliance, error)
+	Read(ctx context.Context, id string) (*v1.GetNosqlAppliance, error)
 	Update(ctx context.Context, id string, request v1.NosqlUpdateRequestAppliance) error
 	Delete(ctx context.Context, id string) error
 	ApplyChanges(ctx context.Context, id string) error
@@ -41,8 +41,8 @@ func NewDatabaseOp(client *v1.Client) DatabaseAPI {
 	return &databaseOp{client: client}
 }
 
-func (op *databaseOp) List(ctx context.Context) ([]v1.NosqlAppliance, error) {
-	res, err := op.client.ListDB(ctx, v1.ListDBParams{FilterApplianceClass: "nosql"})
+func (op *databaseOp) List(ctx context.Context) ([]v1.GetNosqlAppliance, error) {
+	res, err := op.client.ListDB(ctx, v1.ListDBParams{FilterClass: "nosql"})
 	if err != nil {
 		return nil, NewAPIError("Database.List", 0, err)
 	}
@@ -62,8 +62,9 @@ func (op *databaseOp) List(ctx context.Context) ([]v1.NosqlAppliance, error) {
 }
 
 func (op *databaseOp) Create(ctx context.Context, request v1.NosqlCreateRequestAppliance) (*v1.NosqlCreateResponse, error) {
-	request.Class = v1.NewOptString("nosql")
-	request.ServiceClass = v1.NewOptServiceClass("cloud/nosql/beta")
+	request.Class = "nosql"
+	request.Plan = v1.Plan{ID: v1.NewOptInt(51004)}
+	request.ServiceClass = "cloud/nosql/beta"
 	res, err := op.client.CreateDB(ctx, &v1.NosqlCreateRequest{Appliance: request})
 	if err != nil {
 		return nil, NewAPIError("Database.Create", 0, err)
@@ -76,7 +77,7 @@ func (op *databaseOp) Create(ctx context.Context, request v1.NosqlCreateRequestA
 		return nil, NewAPIError("Database.Create", 400, errors.New(p.ErrorMsg.Value))
 	case *v1.UnauthorizedResponse:
 		return nil, NewAPIError("Database.Create", 401, errors.New(p.ErrorMsg.Value))
-	case *v1.ConflictResponse:
+	case *v1.ConflictErrorResponse:
 		return nil, NewAPIError("Database.Create", 409, errors.New(p.ErrorMsg.Value))
 	case *v1.ServerErrorResponse:
 		return nil, NewAPIError("Database.Create", 500, errors.New(p.ErrorMsg.Value))
@@ -85,7 +86,7 @@ func (op *databaseOp) Create(ctx context.Context, request v1.NosqlCreateRequestA
 	}
 }
 
-func (op *databaseOp) Read(ctx context.Context, id string) (*v1.NosqlAppliance, error) {
+func (op *databaseOp) Read(ctx context.Context, id string) (*v1.GetNosqlAppliance, error) {
 	res, err := op.client.GetDB(ctx, v1.GetDBParams{ApplianceID: id})
 	if err != nil {
 		return nil, NewAPIError("Database.Read", 0, err)
@@ -93,7 +94,7 @@ func (op *databaseOp) Read(ctx context.Context, id string) (*v1.NosqlAppliance, 
 
 	switch p := res.(type) {
 	case *v1.NosqlGetResponse:
-		return &p.Appliance.Value, nil
+		return &p.Appliance, nil
 	case *v1.BadRequestResponse:
 		return nil, NewAPIError("Database.Read", 400, errors.New(p.ErrorMsg.Value))
 	case *v1.UnauthorizedResponse:
@@ -172,7 +173,7 @@ func (op *databaseOp) GetStatus(ctx context.Context, id string) (*v1.NosqlStatus
 
 	switch p := res.(type) {
 	case *v1.NosqlStatusResponse:
-		return &p.Appliance.SettingsResponse.Nosql.Value, nil
+		return &p.Appliance.Value.SettingsResponse.Value.Nosql.Value, nil
 	case *v1.BadRequestResponse:
 		return nil, NewAPIError("Database.GetStatus", 400, errors.New(p.ErrorMsg.Value))
 	case *v1.UnauthorizedResponse:

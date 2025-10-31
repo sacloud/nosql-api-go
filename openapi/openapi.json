@@ -159,6 +159,9 @@
           "401": {
             "$ref": "#/components/responses/UnauthorizedResponse"
           },
+          "404": {
+            "$ref": "#/components/responses/NotFoundResponse"
+          },
           "500": {
             "$ref": "#/components/responses/ServerErrorResponse"
           }
@@ -228,7 +231,7 @@
           }
         ],
         "responses": {
-          "202": {
+          "200": {
             "description": "NoSQL削除受け付け成功時のレスポンス",
             "content": {
               "application/json": {
@@ -1255,7 +1258,8 @@
           "StatusChangedAt": {
             "type": "string",
             "format": "date-time",
-            "example": "2021-01-01T00:00:00Z"
+            "example": "2021-01-01T00:00:00Z",
+            "nullable": true
           },
           "Host": {
             "type": "object",
@@ -1503,6 +1507,7 @@
                         "UserSubnet": {
                           "type": "object",
                           "description": "ユーザサブネット情報",
+                          "nullable": true,
                           "properties": {
                             "DefaultRoute": {
                               "type": "string",
@@ -1722,7 +1727,8 @@
             "$ref": "#/components/schemas/Tags"
           },
           "Availability": {
-            "$ref": "#/components/schemas/Availability"
+            "type": "integer",
+            "example": 70
           },
           "ServerCount": {
             "type": "integer",
@@ -2818,6 +2824,7 @@
                   "EncryptionKey": {
                     "type": "object",
                     "description": "暗号化キー情報",
+                    "nullable": true,
                     "properties": {
                       "KMSKeyID": {
                         "type": "string",
@@ -2922,6 +2929,7 @@
                         "UserSubnet": {
                           "type": "object",
                           "description": "ユーザサブネット情報",
+                          "nullable": true,
                           "properties": {
                             "DefaultRoute": {
                               "type": "string",

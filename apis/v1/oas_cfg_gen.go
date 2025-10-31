@@ -10,13 +10,14 @@ import (
 )
 
 var regexMap = map[string]ogenregex.Regexp{
-	"^(([0-1][0-9]|2[0-3]):(00|15|30|45))*$":                            ogenregex.MustCompile("^(([0-1][0-9]|2[0-3]):(00|15|30|45))*$"),
+	"^(([0-1][0-9]|2[0-3]):(00|15|30|45))$":                             ogenregex.MustCompile("^(([0-1][0-9]|2[0-3]):(00|15|30|45))$"),
+	"^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$":                                  ogenregex.MustCompile("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"),
 	"^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}(?:/(?:[0-9]|[1-2][0-9]|3[0-2]))?$": ogenregex.MustCompile("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}(?:/(?:[0-9]|[1-2][0-9]|3[0-2]))?$"),
 	"^(nfs://[0-9\\.]+/[A-Za-z0-9_\\-\\/]+)$":                           ogenregex.MustCompile("^(nfs://[0-9\\.]+/[A-Za-z0-9_\\-\\/]+)$"),
-	"^[^\\s\\u3000]+$":       ogenregex.MustCompile("^[^\\s\\u3000]+$"),
-	"^[a-zA-Z0-9-._]+$":      ogenregex.MustCompile("^[a-zA-Z0-9-._]+$"),
-	"^[a-z][a-z0-9_]{3,19}$": ogenregex.MustCompile("^[a-z][a-z0-9_]{3,19}$"),
-	"^\\d+\\.\\d+\\.\\d+$":   ogenregex.MustCompile("^\\d+\\.\\d+\\.\\d+$"),
+	"^[^\\s\\u3000]+$":                                                  ogenregex.MustCompile("^[^\\s\\u3000]+$"),
+	"^[a-zA-Z0-9-._]+$":                                                 ogenregex.MustCompile("^[a-zA-Z0-9-._]+$"),
+	"^[a-z][a-z0-9_]{3,19}$":                                            ogenregex.MustCompile("^[a-z][a-z0-9_]{3,19}$"),
+	"^\\d+\\.\\d+\\.\\d+$":                                              ogenregex.MustCompile("^\\d+\\.\\d+\\.\\d+$"),
 }
 
 type (

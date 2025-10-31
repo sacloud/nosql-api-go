@@ -3,10 +3,18 @@
 package v1
 
 // setDefaults set default value of fields.
+func (s *GetNosqlApplianceRemarkNosql) setDefaults() {
+	{
+		val := int(9042)
+		s.Port.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
 func (s *NosqlApplianceRemarkNosql) setDefaults() {
 	{
 		val := int(9042)
-		s.Port = val
+		s.Port.SetTo(val)
 	}
 }
 
@@ -14,6 +22,6 @@ func (s *NosqlApplianceRemarkNosql) setDefaults() {
 func (s *NosqlRemarkNosql) setDefaults() {
 	{
 		val := int(9042)
-		s.Port = val
+		s.Port.SetTo(val)
 	}
 }

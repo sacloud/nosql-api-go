@@ -50,6 +50,12 @@ type GetDBParams struct {
 	ApplianceID string
 }
 
+// GetNoSQLNodeHealthParams is parameters of GetNoSQLNodeHealth operation.
+type GetNoSQLNodeHealthParams struct {
+	// アプライアンスID.
+	ApplianceID string
+}
+
 // GetParameterParams is parameters of getParameter operation.
 type GetParameterParams struct {
 	// アプライアンスID.
@@ -65,7 +71,13 @@ type GetVersionParams struct {
 // ListDBParams is parameters of ListDB operation.
 type ListDBParams struct {
 	// Class固定.
-	FilterApplianceClass string
+	FilterClass string
+}
+
+// PostNoSQLRepairParams is parameters of PostNoSQLRepair operation.
+type PostNoSQLRepairParams struct {
+	// アプライアンスID.
+	ApplianceID string
 }
 
 // PutAppliancePowerParams is parameters of PutAppliancePower operation.
@@ -82,6 +94,12 @@ type PutParameterParams struct {
 
 // PutVersionParams is parameters of putVersion operation.
 type PutVersionParams struct {
+	// アプライアンスID.
+	ApplianceID string
+}
+
+// RecoverNoSQLNodeParams is parameters of RecoverNoSQLNode operation.
+type RecoverNoSQLNodeParams struct {
 	// アプライアンスID.
 	ApplianceID string
 }

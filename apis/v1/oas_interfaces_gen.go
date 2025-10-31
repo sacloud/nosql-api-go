@@ -33,6 +33,10 @@ type GetDBRes interface {
 	getDBRes()
 }
 
+type GetNoSQLNodeHealthRes interface {
+	getNoSQLNodeHealthRes()
+}
+
 type GetParameterRes interface {
 	getParameterRes()
 }
@@ -45,6 +49,10 @@ type ListDBRes interface {
 	listDBRes()
 }
 
+type PostNoSQLRepairRes interface {
+	postNoSQLRepairRes()
+}
+
 type PutAppliancePowerRes interface {
 	putAppliancePowerRes()
 }
@@ -55,6 +63,10 @@ type PutParameterRes interface {
 
 type PutVersionRes interface {
 	putVersionRes()
+}
+
+type RecoverNoSQLNodeRes interface {
+	recoverNoSQLNodeRes()
 }
 
 type RestoreBackupRes interface {
