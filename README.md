@@ -108,7 +108,7 @@ func main() {
 }
 ```
 
-NOTE: DatabaseAPIにあるNoSQL更新APIは設定のバリデーションのみで、実際に更新するには追加で反映APIを呼ぶ必要があります。 `Update` -> `ApplyChanges`.
+NOTE: DatabaseAPIにあるNoSQL更新APIは設定のバリデーションのみで、実際に更新するには追加で反映APIを呼ぶ必要があります: `Update` → `ApplyChanges`.
 
 ### ノードの追加
 
