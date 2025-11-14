@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "version": "1.4.1",
+    "version": "1.4.0",
     "title": "NoSQL CR APIドキュメント",
     "contact": {
       "name": "SAKURA internet Inc."
@@ -1242,32 +1242,10 @@
                 "UserIPAddress"
               ]
             }
-          },
-          "Network": {
-            "type": "object",
-            "description": "ネットワーク情報",
-            "properties": {
-              "DefaultRoute": {
-                "type": "string",
-                "description": "ゲートウェイのアドレス  \n**新規作成時・ノード追加時必須**\n",
-                "example": "192.168.100.254"
-              },
-              "NetworkMaskLen": {
-                "type": "integer",
-                "description": "ネットマスク  \n**新規作成時・ノード追加時必須**\n",
-                "example": 24
-              }
-            },
-            "required": [
-              "DefaultRoute",
-              "NetworkMaskLen"
-            ]
           }
         },
         "required": [
-          "Nosql",
-          "Servers",
-          "Network"
+          "Nosql"
         ]
       },
       "Instance": {
@@ -1422,7 +1400,6 @@
                   "EncryptionKey": {
                     "type": "object",
                     "description": "暗号化キー情報",
-                    "nullable": true,
                     "properties": {
                       "KMSKeyID": {
                         "type": "string",
@@ -1454,7 +1431,6 @@
                 "type": "array",
                 "items": {
                   "type": "object",
-                  "nullable": true,
                   "properties": {
                     "IPAddress": {
                       "type": "string",
@@ -1531,6 +1507,7 @@
                         "UserSubnet": {
                           "type": "object",
                           "description": "ユーザサブネット情報",
+                          "nullable": true,
                           "properties": {
                             "DefaultRoute": {
                               "type": "string",
@@ -1580,7 +1557,6 @@
                       "EncryptionKey": {
                         "type": "object",
                         "description": "暗号化キー情報",
-                        "nullable": true,
                         "properties": {
                           "KMSKeyID": {
                             "type": "string",
@@ -2356,6 +2332,7 @@
             "type": "string",
             "format": "ipv4",
             "description": "ユーザ側スイッチに接続するIPアドレス",
+            "pattern": "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$",
             "example": "192.168.100.11"
           },
           "NodeType": {
@@ -2730,25 +2707,9 @@
                 "UserIPAddress": {
                   "type": "string",
                   "format": "ipv4",
-                  "description": "ユーザ側スイッチに接続するIPアドレス  \n",
+                  "description": "ユーザ側スイッチに接続するIPアドレス  \n※ノード数分指定する\n",
                   "example": "192.168.100.11"
                 }
-              }
-            }
-          },
-          "Network": {
-            "type": "object",
-            "description": "ネットワーク情報",
-            "properties": {
-              "DefaultRoute": {
-                "type": "string",
-                "description": "ゲートウェイのアドレス",
-                "example": "192.168.100.254"
-              },
-              "NetworkMaskLen": {
-                "type": "integer",
-                "description": "ネットマスク",
-                "example": 24
               }
             }
           }
@@ -2895,7 +2856,6 @@
                 "type": "array",
                 "items": {
                   "type": "object",
-                  "nullable": true,
                   "properties": {
                     "IPAddress": {
                       "type": "string",
@@ -2969,6 +2929,7 @@
                         "UserSubnet": {
                           "type": "object",
                           "description": "ユーザサブネット情報",
+                          "nullable": true,
                           "properties": {
                             "DefaultRoute": {
                               "type": "string",

@@ -122,6 +122,10 @@ func (op *databaseOp) Update(ctx context.Context, id string, request v1.NosqlUpd
 		return NewAPIError("Database.Update", 400, errors.New(p.ErrorMsg.Value))
 	case *v1.UnauthorizedResponse:
 		return NewAPIError("Database.Update", 401, errors.New(p.ErrorMsg.Value))
+	case *v1.NotFoundResponse:
+		return NewAPIError("Database.Update", 404, errors.New(p.ErrorMsg.Value))
+	case *v1.ConflictErrorResponse:
+		return NewAPIError("Database.Update", 409, errors.New(p.ErrorMsg.Value))
 	case *v1.ServerErrorResponse:
 		return NewAPIError("Database.Update", 500, errors.New(p.ErrorMsg.Value))
 	default:
@@ -142,6 +146,10 @@ func (op *databaseOp) Delete(ctx context.Context, id string) error {
 		return NewAPIError("Database.Delete", 400, errors.New(p.ErrorMsg.Value))
 	case *v1.UnauthorizedResponse:
 		return NewAPIError("Database.Delete", 401, errors.New(p.ErrorMsg.Value))
+	case *v1.NotFoundResponse:
+		return NewAPIError("Database.Delete", 404, errors.New(p.ErrorMsg.Value))
+	case *v1.ConflictErrorResponse:
+		return NewAPIError("Database.Delete", 409, errors.New(p.ErrorMsg.Value))
 	case *v1.ServerErrorResponse:
 		return NewAPIError("Database.Delete", 500, errors.New(p.ErrorMsg.Value))
 	default:

@@ -85,6 +85,8 @@ func (op *instanceOp) UpgradeVersion(ctx context.Context, version string) error 
 		return NewAPIError("Instance.UpgradeVersion", 400, errors.New(p.ErrorMsg.Value))
 	case *v1.UnauthorizedResponse:
 		return NewAPIError("Instance.UpgradeVersion", 401, errors.New(p.ErrorMsg.Value))
+	case *v1.ConflictErrorResponse:
+		return NewAPIError("Instance.UpgradeVersion", 409, errors.New(p.ErrorMsg.Value))
 	case *v1.ServerErrorResponse:
 		return NewAPIError("Instance.UpgradeVersion", 500, errors.New(p.ErrorMsg.Value))
 	default:
@@ -127,6 +129,8 @@ func (op *instanceOp) SetParameters(ctx context.Context, params []v1.NosqlPutPar
 		return NewAPIError("Instance.SetParameters", 400, errors.New(p.ErrorMsg.Value))
 	case *v1.UnauthorizedResponse:
 		return NewAPIError("Instance.SetParameters", 401, errors.New(p.ErrorMsg.Value))
+	case *v1.ConflictErrorResponse:
+		return NewAPIError("Instance.SetParameters", 409, errors.New(p.ErrorMsg.Value))
 	case *v1.ServerErrorResponse:
 		return NewAPIError("Instance.SetParameters", 500, errors.New(p.ErrorMsg.Value))
 	default:
@@ -147,6 +151,8 @@ func (op *instanceOp) GetNodeHealth(ctx context.Context) (v1.NodeHealthNosqlStat
 		return v1.NodeHealthNosqlStatus(""), NewAPIError("Instance.GetNodeHealth", 400, errors.New(p.ErrorMsg.Value))
 	case *v1.UnauthorizedResponse:
 		return v1.NodeHealthNosqlStatus(""), NewAPIError("Instance.GetNodeHealth", 401, errors.New(p.ErrorMsg.Value))
+	case *v1.NotFoundResponse:
+		return v1.NodeHealthNosqlStatus(""), NewAPIError("Instance.GetNodeHealth", 404, errors.New(p.ErrorMsg.Value))
 	case *v1.ServerErrorResponse:
 		return v1.NodeHealthNosqlStatus(""), NewAPIError("Instance.GetNodeHealth", 500, errors.New(p.ErrorMsg.Value))
 	default:
@@ -201,6 +207,8 @@ func (op *instanceOp) Recover(ctx context.Context) (string, error) {
 		return "", NewAPIError("Instance.Recover", 400, errors.New(p.ErrorMsg.Value))
 	case *v1.UnauthorizedResponse:
 		return "", NewAPIError("Instance.Recover", 401, errors.New(p.ErrorMsg.Value))
+	case *v1.NotFoundResponse:
+		return "", NewAPIError("Instance.Recover", 404, errors.New(p.ErrorMsg.Value))
 	case *v1.ServerErrorResponse:
 		return "", NewAPIError("Instance.Recover", 500, errors.New(p.ErrorMsg.Value))
 	default:
@@ -223,6 +231,10 @@ func (op *instanceOp) Repair(ctx context.Context, repairType string) error {
 		return NewAPIError("Instance.Repair", 400, errors.New(p.ErrorMsg.Value))
 	case *v1.UnauthorizedResponse:
 		return NewAPIError("Instance.Repair", 401, errors.New(p.ErrorMsg.Value))
+	case *v1.NotFoundResponse:
+		return NewAPIError("Instance.Repair", 404, errors.New(p.ErrorMsg.Value))
+	case *v1.ConflictErrorResponse:
+		return NewAPIError("Instance.Repair", 409, errors.New(p.ErrorMsg.Value))
 	case *v1.ServerErrorResponse:
 		return NewAPIError("Instance.Repair", 500, errors.New(p.ErrorMsg.Value))
 	default:
@@ -245,6 +257,8 @@ func (op *instanceOp) Start(ctx context.Context) error {
 		return NewAPIError("Instance.Start", 401, errors.New(p.ErrorMsg.Value))
 	case *v1.NotFoundResponse:
 		return NewAPIError("Instance.Start", 404, errors.New(p.ErrorMsg.Value))
+	case *v1.ConflictErrorResponse:
+		return NewAPIError("Instance.Start", 409, errors.New(p.ErrorMsg.Value))
 	case *v1.ServerErrorResponse:
 		return NewAPIError("Instance.Start", 500, errors.New(p.ErrorMsg.Value))
 	default:
@@ -267,6 +281,8 @@ func (op *instanceOp) Stop(ctx context.Context) error {
 		return NewAPIError("Instance.Stop", 401, errors.New(p.ErrorMsg.Value))
 	case *v1.NotFoundResponse:
 		return NewAPIError("Instance.Stop", 404, errors.New(p.ErrorMsg.Value))
+	case *v1.ConflictErrorResponse:
+		return NewAPIError("Instance.Stop", 409, errors.New(p.ErrorMsg.Value))
 	case *v1.ServerErrorResponse:
 		return NewAPIError("Instance.Stop", 500, errors.New(p.ErrorMsg.Value))
 	default:

@@ -188,6 +188,18 @@ func TestGetNosqlApplianceRemark_EncodeDecode(t *testing.T) {
 	var typ2 GetNosqlApplianceRemark
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
+func TestGetNosqlApplianceRemarkNetwork_EncodeDecode(t *testing.T) {
+	var typ GetNosqlApplianceRemarkNetwork
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 GetNosqlApplianceRemarkNetwork
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
 func TestGetNosqlApplianceRemarkNosql_EncodeDecode(t *testing.T) {
 	var typ GetNosqlApplianceRemarkNosql
 	typ.SetFake()
@@ -898,6 +910,18 @@ func TestNosqlApplianceRemark_EncodeDecode(t *testing.T) {
 	require.True(t, std.Valid(data), "Encoded: %s", data)
 
 	var typ2 NosqlApplianceRemark
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlApplianceRemarkNetwork_EncodeDecode(t *testing.T) {
+	var typ NosqlApplianceRemarkNetwork
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlApplianceRemarkNetwork
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
 func TestNosqlApplianceRemarkNosql_EncodeDecode(t *testing.T) {
@@ -1725,6 +1749,18 @@ func TestNosqlRemark_EncodeDecode(t *testing.T) {
 	require.True(t, std.Valid(data), "Encoded: %s", data)
 
 	var typ2 NosqlRemark
+	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
+}
+func TestNosqlRemarkNetwork_EncodeDecode(t *testing.T) {
+	var typ NosqlRemarkNetwork
+	typ.SetFake()
+
+	e := jx.Encoder{}
+	typ.Encode(&e)
+	data := e.Bytes()
+	require.True(t, std.Valid(data), "Encoded: %s", data)
+
+	var typ2 NosqlRemarkNetwork
 	require.NoError(t, typ2.Decode(jx.DecodeBytes(data)))
 }
 func TestNosqlRemarkNosql_EncodeDecode(t *testing.T) {

@@ -247,11 +247,11 @@ type GetNosqlAppliance struct {
 	Availability OptAvailability            `json:"Availability"`
 	Instance     OptInstance                `json:"Instance"`
 	// ディスク情報.
-	Disk         OptNilGetNosqlApplianceDisk       `json:"Disk"`
-	ServiceClass OptGetServiceClass                `json:"ServiceClass"`
-	Generation   OptInt                            `json:"Generation"`
-	CreatedAt    OptDateTime                       `json:"CreatedAt"`
-	Interfaces   []GetNosqlApplianceInterfacesItem `json:"Interfaces"`
+	Disk         OptNilGetNosqlApplianceDisk          `json:"Disk"`
+	ServiceClass OptGetServiceClass                   `json:"ServiceClass"`
+	Generation   OptInt                               `json:"Generation"`
+	CreatedAt    OptDateTime                          `json:"CreatedAt"`
+	Interfaces   []NilGetNosqlApplianceInterfacesItem `json:"Interfaces"`
 }
 
 // GetClass returns the value of Class.
@@ -330,7 +330,7 @@ func (s *GetNosqlAppliance) GetCreatedAt() OptDateTime {
 }
 
 // GetInterfaces returns the value of Interfaces.
-func (s *GetNosqlAppliance) GetInterfaces() []GetNosqlApplianceInterfacesItem {
+func (s *GetNosqlAppliance) GetInterfaces() []NilGetNosqlApplianceInterfacesItem {
 	return s.Interfaces
 }
 
@@ -410,7 +410,7 @@ func (s *GetNosqlAppliance) SetCreatedAt(val OptDateTime) {
 }
 
 // SetInterfaces sets the value of Interfaces.
-func (s *GetNosqlAppliance) SetInterfaces(val []GetNosqlApplianceInterfacesItem) {
+func (s *GetNosqlAppliance) SetInterfaces(val []NilGetNosqlApplianceInterfacesItem) {
 	s.Interfaces = val
 }
 
@@ -520,7 +520,7 @@ type GetNosqlApplianceInterfacesItemSwitch struct {
 	// サブネット情報.
 	Subnet OptNilGetNosqlApplianceInterfacesItemSwitchSubnet `json:"Subnet"`
 	// ユーザサブネット情報.
-	UserSubnet OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet `json:"UserSubnet"`
+	UserSubnet OptGetNosqlApplianceInterfacesItemSwitchUserSubnet `json:"UserSubnet"`
 }
 
 // GetID returns the value of ID.
@@ -544,7 +544,7 @@ func (s *GetNosqlApplianceInterfacesItemSwitch) GetSubnet() OptNilGetNosqlApplia
 }
 
 // GetUserSubnet returns the value of UserSubnet.
-func (s *GetNosqlApplianceInterfacesItemSwitch) GetUserSubnet() OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet {
+func (s *GetNosqlApplianceInterfacesItemSwitch) GetUserSubnet() OptGetNosqlApplianceInterfacesItemSwitchUserSubnet {
 	return s.UserSubnet
 }
 
@@ -569,7 +569,7 @@ func (s *GetNosqlApplianceInterfacesItemSwitch) SetSubnet(val OptNilGetNosqlAppl
 }
 
 // SetUserSubnet sets the value of UserSubnet.
-func (s *GetNosqlApplianceInterfacesItemSwitch) SetUserSubnet(val OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) {
+func (s *GetNosqlApplianceInterfacesItemSwitch) SetUserSubnet(val OptGetNosqlApplianceInterfacesItemSwitchUserSubnet) {
 	s.UserSubnet = val
 }
 
@@ -670,6 +670,8 @@ func (s *GetNosqlApplianceInterfacesItemSwitchUserSubnet) SetNetworkMaskLen(val 
 type GetNosqlApplianceRemark struct {
 	Nosql   OptGetNosqlApplianceRemarkNosql      `json:"Nosql"`
 	Servers []GetNosqlApplianceRemarkServersItem `json:"Servers"`
+	// ネットワーク情報.
+	Network OptGetNosqlApplianceRemarkNetwork `json:"Network"`
 	// ゾーン.
 	Zone OptGetNosqlApplianceRemarkZone `json:"Zone"`
 	// サービスクラス.
@@ -684,6 +686,11 @@ func (s *GetNosqlApplianceRemark) GetNosql() OptGetNosqlApplianceRemarkNosql {
 // GetServers returns the value of Servers.
 func (s *GetNosqlApplianceRemark) GetServers() []GetNosqlApplianceRemarkServersItem {
 	return s.Servers
+}
+
+// GetNetwork returns the value of Network.
+func (s *GetNosqlApplianceRemark) GetNetwork() OptGetNosqlApplianceRemarkNetwork {
+	return s.Network
 }
 
 // GetZone returns the value of Zone.
@@ -706,6 +713,11 @@ func (s *GetNosqlApplianceRemark) SetServers(val []GetNosqlApplianceRemarkServer
 	s.Servers = val
 }
 
+// SetNetwork sets the value of Network.
+func (s *GetNosqlApplianceRemark) SetNetwork(val OptGetNosqlApplianceRemarkNetwork) {
+	s.Network = val
+}
+
 // SetZone sets the value of Zone.
 func (s *GetNosqlApplianceRemark) SetZone(val OptGetNosqlApplianceRemarkZone) {
 	s.Zone = val
@@ -714,6 +726,34 @@ func (s *GetNosqlApplianceRemark) SetZone(val OptGetNosqlApplianceRemarkZone) {
 // SetServiceClass sets the value of ServiceClass.
 func (s *GetNosqlApplianceRemark) SetServiceClass(val OptString) {
 	s.ServiceClass = val
+}
+
+// ネットワーク情報.
+type GetNosqlApplianceRemarkNetwork struct {
+	// ゲートウェイのアドレス.
+	DefaultRoute OptString `json:"DefaultRoute"`
+	// ネットマスク.
+	NetworkMaskLen OptInt `json:"NetworkMaskLen"`
+}
+
+// GetDefaultRoute returns the value of DefaultRoute.
+func (s *GetNosqlApplianceRemarkNetwork) GetDefaultRoute() OptString {
+	return s.DefaultRoute
+}
+
+// GetNetworkMaskLen returns the value of NetworkMaskLen.
+func (s *GetNosqlApplianceRemarkNetwork) GetNetworkMaskLen() OptInt {
+	return s.NetworkMaskLen
+}
+
+// SetDefaultRoute sets the value of DefaultRoute.
+func (s *GetNosqlApplianceRemarkNetwork) SetDefaultRoute(val OptString) {
+	s.DefaultRoute = val
+}
+
+// SetNetworkMaskLen sets the value of NetworkMaskLen.
+func (s *GetNosqlApplianceRemarkNetwork) SetNetworkMaskLen(val OptInt) {
+	s.NetworkMaskLen = val
 }
 
 type GetNosqlApplianceRemarkNosql struct {
@@ -1024,8 +1064,7 @@ func (GetNosqlApplianceRemarkNosqlVirtualcore) AllValues() []GetNosqlApplianceRe
 }
 
 type GetNosqlApplianceRemarkServersItem struct {
-	// ユーザ側スイッチに接続するIPアドレス
-	// ※ノード数分指定する.
+	// ユーザ側スイッチに接続するIPアドレス.
 	UserIPAddress OptIPv4 `json:"UserIPAddress"`
 }
 
@@ -1666,6 +1705,96 @@ func (s *InstanceHostsItem) SetInfoURL(val OptString) {
 
 type IsOk bool
 
+// NewNilGetNosqlApplianceInterfacesItem returns new NilGetNosqlApplianceInterfacesItem with value set to v.
+func NewNilGetNosqlApplianceInterfacesItem(v GetNosqlApplianceInterfacesItem) NilGetNosqlApplianceInterfacesItem {
+	return NilGetNosqlApplianceInterfacesItem{
+		Value: v,
+	}
+}
+
+// NilGetNosqlApplianceInterfacesItem is nullable GetNosqlApplianceInterfacesItem.
+type NilGetNosqlApplianceInterfacesItem struct {
+	Value GetNosqlApplianceInterfacesItem
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilGetNosqlApplianceInterfacesItem) SetTo(v GetNosqlApplianceInterfacesItem) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilGetNosqlApplianceInterfacesItem) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilGetNosqlApplianceInterfacesItem) SetToNull() {
+	o.Null = true
+	var v GetNosqlApplianceInterfacesItem
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilGetNosqlApplianceInterfacesItem) Get() (v GetNosqlApplianceInterfacesItem, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilGetNosqlApplianceInterfacesItem) Or(d GetNosqlApplianceInterfacesItem) GetNosqlApplianceInterfacesItem {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilNosqlApplianceInterfacesItem returns new NilNosqlApplianceInterfacesItem with value set to v.
+func NewNilNosqlApplianceInterfacesItem(v NosqlApplianceInterfacesItem) NilNosqlApplianceInterfacesItem {
+	return NilNosqlApplianceInterfacesItem{
+		Value: v,
+	}
+}
+
+// NilNosqlApplianceInterfacesItem is nullable NosqlApplianceInterfacesItem.
+type NilNosqlApplianceInterfacesItem struct {
+	Value NosqlApplianceInterfacesItem
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilNosqlApplianceInterfacesItem) SetTo(v NosqlApplianceInterfacesItem) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilNosqlApplianceInterfacesItem) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilNosqlApplianceInterfacesItem) SetToNull() {
+	o.Null = true
+	var v NosqlApplianceInterfacesItem
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilNosqlApplianceInterfacesItem) Get() (v NosqlApplianceInterfacesItem, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilNosqlApplianceInterfacesItem) Or(d NosqlApplianceInterfacesItem) NosqlApplianceInterfacesItem {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // Merged schema.
 // Ref: #/components/schemas/NodeHealth
 type NodeHealth struct {
@@ -1801,11 +1930,11 @@ type NosqlAppliance struct {
 	Availability OptAvailability         `json:"Availability"`
 	Instance     OptInstance             `json:"Instance"`
 	// ディスク情報.
-	Disk         OptNilNosqlApplianceDisk       `json:"Disk"`
-	ServiceClass OptServiceClass                `json:"ServiceClass"`
-	Generation   OptInt                         `json:"Generation"`
-	CreatedAt    OptDateTime                    `json:"CreatedAt"`
-	Interfaces   []NosqlApplianceInterfacesItem `json:"Interfaces"`
+	Disk         OptNilNosqlApplianceDisk          `json:"Disk"`
+	ServiceClass OptServiceClass                   `json:"ServiceClass"`
+	Generation   OptInt                            `json:"Generation"`
+	CreatedAt    OptDateTime                       `json:"CreatedAt"`
+	Interfaces   []NilNosqlApplianceInterfacesItem `json:"Interfaces"`
 }
 
 // GetClass returns the value of Class.
@@ -1884,7 +2013,7 @@ func (s *NosqlAppliance) GetCreatedAt() OptDateTime {
 }
 
 // GetInterfaces returns the value of Interfaces.
-func (s *NosqlAppliance) GetInterfaces() []NosqlApplianceInterfacesItem {
+func (s *NosqlAppliance) GetInterfaces() []NilNosqlApplianceInterfacesItem {
 	return s.Interfaces
 }
 
@@ -1964,20 +2093,20 @@ func (s *NosqlAppliance) SetCreatedAt(val OptDateTime) {
 }
 
 // SetInterfaces sets the value of Interfaces.
-func (s *NosqlAppliance) SetInterfaces(val []NosqlApplianceInterfacesItem) {
+func (s *NosqlAppliance) SetInterfaces(val []NilNosqlApplianceInterfacesItem) {
 	s.Interfaces = val
 }
 
 // ディスク情報.
 type NosqlApplianceDisk struct {
 	// 暗号化キー情報.
-	EncryptionKey OptNosqlApplianceDiskEncryptionKey `json:"EncryptionKey"`
+	EncryptionKey OptNilNosqlApplianceDiskEncryptionKey `json:"EncryptionKey"`
 	// 暗号化アルゴリズム.
 	EncryptionAlgorithm OptString `json:"EncryptionAlgorithm"`
 }
 
 // GetEncryptionKey returns the value of EncryptionKey.
-func (s *NosqlApplianceDisk) GetEncryptionKey() OptNosqlApplianceDiskEncryptionKey {
+func (s *NosqlApplianceDisk) GetEncryptionKey() OptNilNosqlApplianceDiskEncryptionKey {
 	return s.EncryptionKey
 }
 
@@ -1987,7 +2116,7 @@ func (s *NosqlApplianceDisk) GetEncryptionAlgorithm() OptString {
 }
 
 // SetEncryptionKey sets the value of EncryptionKey.
-func (s *NosqlApplianceDisk) SetEncryptionKey(val OptNosqlApplianceDiskEncryptionKey) {
+func (s *NosqlApplianceDisk) SetEncryptionKey(val OptNilNosqlApplianceDiskEncryptionKey) {
 	s.EncryptionKey = val
 }
 
@@ -2074,7 +2203,7 @@ type NosqlApplianceInterfacesItemSwitch struct {
 	// サブネット情報.
 	Subnet OptNilNosqlApplianceInterfacesItemSwitchSubnet `json:"Subnet"`
 	// ユーザサブネット情報.
-	UserSubnet OptNilNosqlApplianceInterfacesItemSwitchUserSubnet `json:"UserSubnet"`
+	UserSubnet OptNosqlApplianceInterfacesItemSwitchUserSubnet `json:"UserSubnet"`
 }
 
 // GetID returns the value of ID.
@@ -2098,7 +2227,7 @@ func (s *NosqlApplianceInterfacesItemSwitch) GetSubnet() OptNilNosqlApplianceInt
 }
 
 // GetUserSubnet returns the value of UserSubnet.
-func (s *NosqlApplianceInterfacesItemSwitch) GetUserSubnet() OptNilNosqlApplianceInterfacesItemSwitchUserSubnet {
+func (s *NosqlApplianceInterfacesItemSwitch) GetUserSubnet() OptNosqlApplianceInterfacesItemSwitchUserSubnet {
 	return s.UserSubnet
 }
 
@@ -2123,7 +2252,7 @@ func (s *NosqlApplianceInterfacesItemSwitch) SetSubnet(val OptNilNosqlApplianceI
 }
 
 // SetUserSubnet sets the value of UserSubnet.
-func (s *NosqlApplianceInterfacesItemSwitch) SetUserSubnet(val OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) {
+func (s *NosqlApplianceInterfacesItemSwitch) SetUserSubnet(val OptNosqlApplianceInterfacesItemSwitchUserSubnet) {
 	s.UserSubnet = val
 }
 
@@ -2224,6 +2353,8 @@ func (s *NosqlApplianceInterfacesItemSwitchUserSubnet) SetNetworkMaskLen(val Opt
 type NosqlApplianceRemark struct {
 	Nosql   NosqlApplianceRemarkNosql         `json:"Nosql"`
 	Servers []NosqlApplianceRemarkServersItem `json:"Servers"`
+	// ネットワーク情報.
+	Network NosqlApplianceRemarkNetwork `json:"Network"`
 	// ゾーン.
 	Zone OptNosqlApplianceRemarkZone `json:"Zone"`
 	// サービスクラス.
@@ -2238,6 +2369,11 @@ func (s *NosqlApplianceRemark) GetNosql() NosqlApplianceRemarkNosql {
 // GetServers returns the value of Servers.
 func (s *NosqlApplianceRemark) GetServers() []NosqlApplianceRemarkServersItem {
 	return s.Servers
+}
+
+// GetNetwork returns the value of Network.
+func (s *NosqlApplianceRemark) GetNetwork() NosqlApplianceRemarkNetwork {
+	return s.Network
 }
 
 // GetZone returns the value of Zone.
@@ -2260,6 +2396,11 @@ func (s *NosqlApplianceRemark) SetServers(val []NosqlApplianceRemarkServersItem)
 	s.Servers = val
 }
 
+// SetNetwork sets the value of Network.
+func (s *NosqlApplianceRemark) SetNetwork(val NosqlApplianceRemarkNetwork) {
+	s.Network = val
+}
+
 // SetZone sets the value of Zone.
 func (s *NosqlApplianceRemark) SetZone(val OptNosqlApplianceRemarkZone) {
 	s.Zone = val
@@ -2268,6 +2409,36 @@ func (s *NosqlApplianceRemark) SetZone(val OptNosqlApplianceRemarkZone) {
 // SetServiceClass sets the value of ServiceClass.
 func (s *NosqlApplianceRemark) SetServiceClass(val OptString) {
 	s.ServiceClass = val
+}
+
+// ネットワーク情報.
+type NosqlApplianceRemarkNetwork struct {
+	// ゲートウェイのアドレス
+	// **新規作成時・ノード追加時必須**.
+	DefaultRoute string `json:"DefaultRoute"`
+	// ネットマスク
+	// **新規作成時・ノード追加時必須**.
+	NetworkMaskLen int `json:"NetworkMaskLen"`
+}
+
+// GetDefaultRoute returns the value of DefaultRoute.
+func (s *NosqlApplianceRemarkNetwork) GetDefaultRoute() string {
+	return s.DefaultRoute
+}
+
+// GetNetworkMaskLen returns the value of NetworkMaskLen.
+func (s *NosqlApplianceRemarkNetwork) GetNetworkMaskLen() int {
+	return s.NetworkMaskLen
+}
+
+// SetDefaultRoute sets the value of DefaultRoute.
+func (s *NosqlApplianceRemarkNetwork) SetDefaultRoute(val string) {
+	s.DefaultRoute = val
+}
+
+// SetNetworkMaskLen sets the value of NetworkMaskLen.
+func (s *NosqlApplianceRemarkNetwork) SetNetworkMaskLen(val int) {
+	s.NetworkMaskLen = val
 }
 
 type NosqlApplianceRemarkNosql struct {
@@ -2909,13 +3080,13 @@ func (s *NosqlCreateRequestAppliance) SetUserInterfaces(val []NosqlCreateRequest
 // を指定する必要があります。.
 type NosqlCreateRequestApplianceDisk struct {
 	// 暗号化キー情報.
-	EncryptionKey OptNosqlCreateRequestApplianceDiskEncryptionKey `json:"EncryptionKey"`
+	EncryptionKey OptNilNosqlCreateRequestApplianceDiskEncryptionKey `json:"EncryptionKey"`
 	// 暗号化アルゴリズム.
 	EncryptionAlgorithm OptString `json:"EncryptionAlgorithm"`
 }
 
 // GetEncryptionKey returns the value of EncryptionKey.
-func (s *NosqlCreateRequestApplianceDisk) GetEncryptionKey() OptNosqlCreateRequestApplianceDiskEncryptionKey {
+func (s *NosqlCreateRequestApplianceDisk) GetEncryptionKey() OptNilNosqlCreateRequestApplianceDiskEncryptionKey {
 	return s.EncryptionKey
 }
 
@@ -2925,7 +3096,7 @@ func (s *NosqlCreateRequestApplianceDisk) GetEncryptionAlgorithm() OptString {
 }
 
 // SetEncryptionKey sets the value of EncryptionKey.
-func (s *NosqlCreateRequestApplianceDisk) SetEncryptionKey(val OptNosqlCreateRequestApplianceDiskEncryptionKey) {
+func (s *NosqlCreateRequestApplianceDisk) SetEncryptionKey(val OptNilNosqlCreateRequestApplianceDiskEncryptionKey) {
 	s.EncryptionKey = val
 }
 
@@ -4296,6 +4467,8 @@ func (*NosqlPutVersionResponse) putVersionRes() {}
 type NosqlRemark struct {
 	Nosql   NosqlRemarkNosql         `json:"Nosql"`
 	Servers []NosqlRemarkServersItem `json:"Servers"`
+	// ネットワーク情報.
+	Network NosqlRemarkNetwork `json:"Network"`
 }
 
 // GetNosql returns the value of Nosql.
@@ -4308,6 +4481,11 @@ func (s *NosqlRemark) GetServers() []NosqlRemarkServersItem {
 	return s.Servers
 }
 
+// GetNetwork returns the value of Network.
+func (s *NosqlRemark) GetNetwork() NosqlRemarkNetwork {
+	return s.Network
+}
+
 // SetNosql sets the value of Nosql.
 func (s *NosqlRemark) SetNosql(val NosqlRemarkNosql) {
 	s.Nosql = val
@@ -4316,6 +4494,41 @@ func (s *NosqlRemark) SetNosql(val NosqlRemarkNosql) {
 // SetServers sets the value of Servers.
 func (s *NosqlRemark) SetServers(val []NosqlRemarkServersItem) {
 	s.Servers = val
+}
+
+// SetNetwork sets the value of Network.
+func (s *NosqlRemark) SetNetwork(val NosqlRemarkNetwork) {
+	s.Network = val
+}
+
+// ネットワーク情報.
+type NosqlRemarkNetwork struct {
+	// ゲートウェイのアドレス
+	// **新規作成時・ノード追加時必須**.
+	DefaultRoute string `json:"DefaultRoute"`
+	// ネットマスク
+	// **新規作成時・ノード追加時必須**.
+	NetworkMaskLen int `json:"NetworkMaskLen"`
+}
+
+// GetDefaultRoute returns the value of DefaultRoute.
+func (s *NosqlRemarkNetwork) GetDefaultRoute() string {
+	return s.DefaultRoute
+}
+
+// GetNetworkMaskLen returns the value of NetworkMaskLen.
+func (s *NosqlRemarkNetwork) GetNetworkMaskLen() int {
+	return s.NetworkMaskLen
+}
+
+// SetDefaultRoute sets the value of DefaultRoute.
+func (s *NosqlRemarkNetwork) SetDefaultRoute(val string) {
+	s.DefaultRoute = val
+}
+
+// SetNetworkMaskLen sets the value of NetworkMaskLen.
+func (s *NosqlRemarkNetwork) SetNetworkMaskLen(val int) {
+	s.NetworkMaskLen = val
 }
 
 type NosqlRemarkNosql struct {
@@ -6403,6 +6616,52 @@ func (o OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet) Or(d GetNosqlApp
 	return d
 }
 
+// NewOptGetNosqlApplianceInterfacesItemSwitchUserSubnet returns new OptGetNosqlApplianceInterfacesItemSwitchUserSubnet with value set to v.
+func NewOptGetNosqlApplianceInterfacesItemSwitchUserSubnet(v GetNosqlApplianceInterfacesItemSwitchUserSubnet) OptGetNosqlApplianceInterfacesItemSwitchUserSubnet {
+	return OptGetNosqlApplianceInterfacesItemSwitchUserSubnet{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlApplianceInterfacesItemSwitchUserSubnet is optional GetNosqlApplianceInterfacesItemSwitchUserSubnet.
+type OptGetNosqlApplianceInterfacesItemSwitchUserSubnet struct {
+	Value GetNosqlApplianceInterfacesItemSwitchUserSubnet
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlApplianceInterfacesItemSwitchUserSubnet was set.
+func (o OptGetNosqlApplianceInterfacesItemSwitchUserSubnet) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlApplianceInterfacesItemSwitchUserSubnet) Reset() {
+	var v GetNosqlApplianceInterfacesItemSwitchUserSubnet
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlApplianceInterfacesItemSwitchUserSubnet) SetTo(v GetNosqlApplianceInterfacesItemSwitchUserSubnet) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlApplianceInterfacesItemSwitchUserSubnet) Get() (v GetNosqlApplianceInterfacesItemSwitchUserSubnet, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlApplianceInterfacesItemSwitchUserSubnet) Or(d GetNosqlApplianceInterfacesItemSwitchUserSubnet) GetNosqlApplianceInterfacesItemSwitchUserSubnet {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptGetNosqlApplianceRemark returns new OptGetNosqlApplianceRemark with value set to v.
 func NewOptGetNosqlApplianceRemark(v GetNosqlApplianceRemark) OptGetNosqlApplianceRemark {
 	return OptGetNosqlApplianceRemark{
@@ -6443,6 +6702,52 @@ func (o OptGetNosqlApplianceRemark) Get() (v GetNosqlApplianceRemark, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptGetNosqlApplianceRemark) Or(d GetNosqlApplianceRemark) GetNosqlApplianceRemark {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptGetNosqlApplianceRemarkNetwork returns new OptGetNosqlApplianceRemarkNetwork with value set to v.
+func NewOptGetNosqlApplianceRemarkNetwork(v GetNosqlApplianceRemarkNetwork) OptGetNosqlApplianceRemarkNetwork {
+	return OptGetNosqlApplianceRemarkNetwork{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptGetNosqlApplianceRemarkNetwork is optional GetNosqlApplianceRemarkNetwork.
+type OptGetNosqlApplianceRemarkNetwork struct {
+	Value GetNosqlApplianceRemarkNetwork
+	Set   bool
+}
+
+// IsSet returns true if OptGetNosqlApplianceRemarkNetwork was set.
+func (o OptGetNosqlApplianceRemarkNetwork) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptGetNosqlApplianceRemarkNetwork) Reset() {
+	var v GetNosqlApplianceRemarkNetwork
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptGetNosqlApplianceRemarkNetwork) SetTo(v GetNosqlApplianceRemarkNetwork) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptGetNosqlApplianceRemarkNetwork) Get() (v GetNosqlApplianceRemarkNetwork, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptGetNosqlApplianceRemarkNetwork) Or(d GetNosqlApplianceRemarkNetwork) GetNosqlApplianceRemarkNetwork {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -7713,69 +8018,6 @@ func (o OptNilGetNosqlApplianceInterfacesItemSwitchSubnet) Or(d GetNosqlApplianc
 	return d
 }
 
-// NewOptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet returns new OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet with value set to v.
-func NewOptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet(v GetNosqlApplianceInterfacesItemSwitchUserSubnet) OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet {
-	return OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet is optional nullable GetNosqlApplianceInterfacesItemSwitchUserSubnet.
-type OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet struct {
-	Value GetNosqlApplianceInterfacesItemSwitchUserSubnet
-	Set   bool
-	Null  bool
-}
-
-// IsSet returns true if OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet was set.
-func (o OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) Reset() {
-	var v GetNosqlApplianceInterfacesItemSwitchUserSubnet
-	o.Value = v
-	o.Set = false
-	o.Null = false
-}
-
-// SetTo sets value to v.
-func (o *OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) SetTo(v GetNosqlApplianceInterfacesItemSwitchUserSubnet) {
-	o.Set = true
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) SetToNull() {
-	o.Set = true
-	o.Null = true
-	var v GetNosqlApplianceInterfacesItemSwitchUserSubnet
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) Get() (v GetNosqlApplianceInterfacesItemSwitchUserSubnet, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) Or(d GetNosqlApplianceInterfacesItemSwitchUserSubnet) GetNosqlApplianceInterfacesItemSwitchUserSubnet {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptNilGetNosqlSettingsBackup returns new OptNilGetNosqlSettingsBackup with value set to v.
 func NewOptNilGetNosqlSettingsBackup(v GetNosqlSettingsBackup) OptNilGetNosqlSettingsBackup {
 	return OptNilGetNosqlSettingsBackup{
@@ -8091,6 +8333,69 @@ func (o OptNilNosqlApplianceDisk) Or(d NosqlApplianceDisk) NosqlApplianceDisk {
 	return d
 }
 
+// NewOptNilNosqlApplianceDiskEncryptionKey returns new OptNilNosqlApplianceDiskEncryptionKey with value set to v.
+func NewOptNilNosqlApplianceDiskEncryptionKey(v NosqlApplianceDiskEncryptionKey) OptNilNosqlApplianceDiskEncryptionKey {
+	return OptNilNosqlApplianceDiskEncryptionKey{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilNosqlApplianceDiskEncryptionKey is optional nullable NosqlApplianceDiskEncryptionKey.
+type OptNilNosqlApplianceDiskEncryptionKey struct {
+	Value NosqlApplianceDiskEncryptionKey
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilNosqlApplianceDiskEncryptionKey was set.
+func (o OptNilNosqlApplianceDiskEncryptionKey) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilNosqlApplianceDiskEncryptionKey) Reset() {
+	var v NosqlApplianceDiskEncryptionKey
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilNosqlApplianceDiskEncryptionKey) SetTo(v NosqlApplianceDiskEncryptionKey) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilNosqlApplianceDiskEncryptionKey) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilNosqlApplianceDiskEncryptionKey) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v NosqlApplianceDiskEncryptionKey
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilNosqlApplianceDiskEncryptionKey) Get() (v NosqlApplianceDiskEncryptionKey, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilNosqlApplianceDiskEncryptionKey) Or(d NosqlApplianceDiskEncryptionKey) NosqlApplianceDiskEncryptionKey {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilNosqlApplianceInterfacesItemSwitchSubnet returns new OptNilNosqlApplianceInterfacesItemSwitchSubnet with value set to v.
 func NewOptNilNosqlApplianceInterfacesItemSwitchSubnet(v NosqlApplianceInterfacesItemSwitchSubnet) OptNilNosqlApplianceInterfacesItemSwitchSubnet {
 	return OptNilNosqlApplianceInterfacesItemSwitchSubnet{
@@ -8154,69 +8459,6 @@ func (o OptNilNosqlApplianceInterfacesItemSwitchSubnet) Or(d NosqlApplianceInter
 	return d
 }
 
-// NewOptNilNosqlApplianceInterfacesItemSwitchUserSubnet returns new OptNilNosqlApplianceInterfacesItemSwitchUserSubnet with value set to v.
-func NewOptNilNosqlApplianceInterfacesItemSwitchUserSubnet(v NosqlApplianceInterfacesItemSwitchUserSubnet) OptNilNosqlApplianceInterfacesItemSwitchUserSubnet {
-	return OptNilNosqlApplianceInterfacesItemSwitchUserSubnet{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNilNosqlApplianceInterfacesItemSwitchUserSubnet is optional nullable NosqlApplianceInterfacesItemSwitchUserSubnet.
-type OptNilNosqlApplianceInterfacesItemSwitchUserSubnet struct {
-	Value NosqlApplianceInterfacesItemSwitchUserSubnet
-	Set   bool
-	Null  bool
-}
-
-// IsSet returns true if OptNilNosqlApplianceInterfacesItemSwitchUserSubnet was set.
-func (o OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) Reset() {
-	var v NosqlApplianceInterfacesItemSwitchUserSubnet
-	o.Value = v
-	o.Set = false
-	o.Null = false
-}
-
-// SetTo sets value to v.
-func (o *OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) SetTo(v NosqlApplianceInterfacesItemSwitchUserSubnet) {
-	o.Set = true
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) SetToNull() {
-	o.Set = true
-	o.Null = true
-	var v NosqlApplianceInterfacesItemSwitchUserSubnet
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) Get() (v NosqlApplianceInterfacesItemSwitchUserSubnet, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) Or(d NosqlApplianceInterfacesItemSwitchUserSubnet) NosqlApplianceInterfacesItemSwitchUserSubnet {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptNilNosqlCreateRequestApplianceDisk returns new OptNilNosqlCreateRequestApplianceDisk with value set to v.
 func NewOptNilNosqlCreateRequestApplianceDisk(v NosqlCreateRequestApplianceDisk) OptNilNosqlCreateRequestApplianceDisk {
 	return OptNilNosqlCreateRequestApplianceDisk{
@@ -8274,6 +8516,69 @@ func (o OptNilNosqlCreateRequestApplianceDisk) Get() (v NosqlCreateRequestApplia
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilNosqlCreateRequestApplianceDisk) Or(d NosqlCreateRequestApplianceDisk) NosqlCreateRequestApplianceDisk {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilNosqlCreateRequestApplianceDiskEncryptionKey returns new OptNilNosqlCreateRequestApplianceDiskEncryptionKey with value set to v.
+func NewOptNilNosqlCreateRequestApplianceDiskEncryptionKey(v NosqlCreateRequestApplianceDiskEncryptionKey) OptNilNosqlCreateRequestApplianceDiskEncryptionKey {
+	return OptNilNosqlCreateRequestApplianceDiskEncryptionKey{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilNosqlCreateRequestApplianceDiskEncryptionKey is optional nullable NosqlCreateRequestApplianceDiskEncryptionKey.
+type OptNilNosqlCreateRequestApplianceDiskEncryptionKey struct {
+	Value NosqlCreateRequestApplianceDiskEncryptionKey
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilNosqlCreateRequestApplianceDiskEncryptionKey was set.
+func (o OptNilNosqlCreateRequestApplianceDiskEncryptionKey) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilNosqlCreateRequestApplianceDiskEncryptionKey) Reset() {
+	var v NosqlCreateRequestApplianceDiskEncryptionKey
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilNosqlCreateRequestApplianceDiskEncryptionKey) SetTo(v NosqlCreateRequestApplianceDiskEncryptionKey) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilNosqlCreateRequestApplianceDiskEncryptionKey) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilNosqlCreateRequestApplianceDiskEncryptionKey) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v NosqlCreateRequestApplianceDiskEncryptionKey
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilNosqlCreateRequestApplianceDiskEncryptionKey) Get() (v NosqlCreateRequestApplianceDiskEncryptionKey, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilNosqlCreateRequestApplianceDiskEncryptionKey) Or(d NosqlCreateRequestApplianceDiskEncryptionKey) NosqlCreateRequestApplianceDiskEncryptionKey {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9115,52 +9420,6 @@ func (o OptNosqlAppliance) Or(d NosqlAppliance) NosqlAppliance {
 	return d
 }
 
-// NewOptNosqlApplianceDiskEncryptionKey returns new OptNosqlApplianceDiskEncryptionKey with value set to v.
-func NewOptNosqlApplianceDiskEncryptionKey(v NosqlApplianceDiskEncryptionKey) OptNosqlApplianceDiskEncryptionKey {
-	return OptNosqlApplianceDiskEncryptionKey{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNosqlApplianceDiskEncryptionKey is optional NosqlApplianceDiskEncryptionKey.
-type OptNosqlApplianceDiskEncryptionKey struct {
-	Value NosqlApplianceDiskEncryptionKey
-	Set   bool
-}
-
-// IsSet returns true if OptNosqlApplianceDiskEncryptionKey was set.
-func (o OptNosqlApplianceDiskEncryptionKey) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNosqlApplianceDiskEncryptionKey) Reset() {
-	var v NosqlApplianceDiskEncryptionKey
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptNosqlApplianceDiskEncryptionKey) SetTo(v NosqlApplianceDiskEncryptionKey) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNosqlApplianceDiskEncryptionKey) Get() (v NosqlApplianceDiskEncryptionKey, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNosqlApplianceDiskEncryptionKey) Or(d NosqlApplianceDiskEncryptionKey) NosqlApplianceDiskEncryptionKey {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptNosqlApplianceInterfacesItemSwitch returns new OptNosqlApplianceInterfacesItemSwitch with value set to v.
 func NewOptNosqlApplianceInterfacesItemSwitch(v NosqlApplianceInterfacesItemSwitch) OptNosqlApplianceInterfacesItemSwitch {
 	return OptNosqlApplianceInterfacesItemSwitch{
@@ -9247,6 +9506,52 @@ func (o OptNosqlApplianceInterfacesItemSwitchSubnetInternet) Get() (v NosqlAppli
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNosqlApplianceInterfacesItemSwitchSubnetInternet) Or(d NosqlApplianceInterfacesItemSwitchSubnetInternet) NosqlApplianceInterfacesItemSwitchSubnetInternet {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNosqlApplianceInterfacesItemSwitchUserSubnet returns new OptNosqlApplianceInterfacesItemSwitchUserSubnet with value set to v.
+func NewOptNosqlApplianceInterfacesItemSwitchUserSubnet(v NosqlApplianceInterfacesItemSwitchUserSubnet) OptNosqlApplianceInterfacesItemSwitchUserSubnet {
+	return OptNosqlApplianceInterfacesItemSwitchUserSubnet{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNosqlApplianceInterfacesItemSwitchUserSubnet is optional NosqlApplianceInterfacesItemSwitchUserSubnet.
+type OptNosqlApplianceInterfacesItemSwitchUserSubnet struct {
+	Value NosqlApplianceInterfacesItemSwitchUserSubnet
+	Set   bool
+}
+
+// IsSet returns true if OptNosqlApplianceInterfacesItemSwitchUserSubnet was set.
+func (o OptNosqlApplianceInterfacesItemSwitchUserSubnet) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNosqlApplianceInterfacesItemSwitchUserSubnet) Reset() {
+	var v NosqlApplianceInterfacesItemSwitchUserSubnet
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNosqlApplianceInterfacesItemSwitchUserSubnet) SetTo(v NosqlApplianceInterfacesItemSwitchUserSubnet) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNosqlApplianceInterfacesItemSwitchUserSubnet) Get() (v NosqlApplianceInterfacesItemSwitchUserSubnet, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNosqlApplianceInterfacesItemSwitchUserSubnet) Or(d NosqlApplianceInterfacesItemSwitchUserSubnet) NosqlApplianceInterfacesItemSwitchUserSubnet {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9661,52 +9966,6 @@ func (o OptNosqlBackupResponseNosql) Get() (v NosqlBackupResponseNosql, ok bool)
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNosqlBackupResponseNosql) Or(d NosqlBackupResponseNosql) NosqlBackupResponseNosql {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptNosqlCreateRequestApplianceDiskEncryptionKey returns new OptNosqlCreateRequestApplianceDiskEncryptionKey with value set to v.
-func NewOptNosqlCreateRequestApplianceDiskEncryptionKey(v NosqlCreateRequestApplianceDiskEncryptionKey) OptNosqlCreateRequestApplianceDiskEncryptionKey {
-	return OptNosqlCreateRequestApplianceDiskEncryptionKey{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNosqlCreateRequestApplianceDiskEncryptionKey is optional NosqlCreateRequestApplianceDiskEncryptionKey.
-type OptNosqlCreateRequestApplianceDiskEncryptionKey struct {
-	Value NosqlCreateRequestApplianceDiskEncryptionKey
-	Set   bool
-}
-
-// IsSet returns true if OptNosqlCreateRequestApplianceDiskEncryptionKey was set.
-func (o OptNosqlCreateRequestApplianceDiskEncryptionKey) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNosqlCreateRequestApplianceDiskEncryptionKey) Reset() {
-	var v NosqlCreateRequestApplianceDiskEncryptionKey
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptNosqlCreateRequestApplianceDiskEncryptionKey) SetTo(v NosqlCreateRequestApplianceDiskEncryptionKey) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNosqlCreateRequestApplianceDiskEncryptionKey) Get() (v NosqlCreateRequestApplianceDiskEncryptionKey, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNosqlCreateRequestApplianceDiskEncryptionKey) Or(d NosqlCreateRequestApplianceDiskEncryptionKey) NosqlCreateRequestApplianceDiskEncryptionKey {
 	if v, ok := o.Get(); ok {
 		return v
 	}
