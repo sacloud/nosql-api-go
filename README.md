@@ -69,6 +69,10 @@ func main() {
 				{UserIPAddress: netip.MustParseAddr("192.168.0.5")},
 				{UserIPAddress: netip.MustParseAddr("192.168.0.6")},
 			},
+			Network: v1.NosqlRemarkNetwork{
+				DefaultRoute:   "192.168.0.1",
+				NetworkMaskLen: 24,
+			},
 		},
 		UserInterfaces: []v1.NosqlCreateRequestApplianceUserInterfacesItem{
 			{
@@ -116,18 +120,15 @@ NOTE: DatabaseAPIにあるNoSQL更新APIは設定のバリデーションのみ�
 func main()
 {
     // 省略
-	resAdded, err := databaseOp.Create(ctx, v1.NosqlCreateRequestAppliance{
+	instanceOp := nosql.NewInstanceOpWithZone(client, primaryNodeId, "tk1b")
+	resAdded, err := instanceOp.AddNodes(ctx, v1.NosqlCreateRequestAppliance{
 		Name: "sdk-test-db-add",
-		Plan: v1.Plan{ID: v1.NewOptInt(51116)}, // 追加では51004ではなく51116
 		Settings: v1.NewOptNosqlCreateRequestApplianceSettings(v1.NosqlCreateRequestApplianceSettings{
-			ReserveIPAddress: v1.NewOptIPv4(netip.MustParseAddr("192.168.0.10")),
+			ReserveIPAddress: v1.NewOptIPv4(netip.MustParseAddr("192.168.0.11")),
 		}),
 		Remark: v1.NosqlRemark{
 			// NosqlRemarkNosqlの設定は現状固定値なので、DefaultUser以外は変更しない
 			Nosql: v1.NosqlRemarkNosql{
-				PrimaryNodes: v1.NewOptNosqlRemarkNosqlPrimaryNodes(v1.NosqlRemarkNosqlPrimaryNodes{
-					Appliance: v1.NosqlRemarkNosqlPrimaryNodesAppliance{ID: id, Zone: v1.NosqlRemarkNosqlPrimaryNodesApplianceZone{Name: "tk1b"}},
-				}),
 				DatabaseVersion: v1.NewOptString("4.1.9"),
 				Nodes:           2,
 				Zone:            "tk1b",
@@ -135,6 +136,10 @@ func main()
 			Servers: []v1.NosqlRemarkServersItem{
 				{UserIPAddress: netip.MustParseAddr("192.168.0.7")},
 				{UserIPAddress: netip.MustParseAddr("192.168.0.8")},
+			},
+			Network: v1.NosqlRemarkNetwork{
+				DefaultRoute:   "192.168.0.1",
+				NetworkMaskLen: 24,
 			},
 		},
 		UserInterfaces: []v1.NosqlCreateRequestApplianceUserInterfacesItem{
@@ -163,7 +168,6 @@ func main()
 ```
 $ go get -tool github.com/ogen-go/ogen/cmd/ogen@latest
 $ go tool ogen -package v1 -target apis/v1 -clean -config ogen-config.yaml ./openapi/openapi.json
-$ git apply fix-list-db-api.diff  # Listがogenの出力したコードではうまくいかないので修正
 ```
 
 ## License
