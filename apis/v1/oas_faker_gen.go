@@ -153,7 +153,7 @@ func (s *GetNosqlAppliance) SetFake() {
 		{
 			s.Interfaces = nil
 			for i := 0; i < 0; i++ {
-				var elem GetNosqlApplianceInterfacesItem
+				var elem NilGetNosqlApplianceInterfacesItem
 				{
 					elem.SetFake()
 				}
@@ -307,12 +307,31 @@ func (s *GetNosqlApplianceRemark) SetFake() {
 	}
 	{
 		{
+			s.Network.SetFake()
+		}
+	}
+	{
+		{
 			s.Zone.SetFake()
 		}
 	}
 	{
 		{
 			s.ServiceClass.SetFake()
+		}
+	}
+}
+
+// SetFake set fake values.
+func (s *GetNosqlApplianceRemarkNetwork) SetFake() {
+	{
+		{
+			s.DefaultRoute.SetFake()
+		}
+	}
+	{
+		{
+			s.NetworkMaskLen.SetFake()
 		}
 	}
 }
@@ -697,6 +716,16 @@ func (s *IsOk) SetFake() {
 }
 
 // SetFake set fake values.
+func (s *NilGetNosqlApplianceInterfacesItem) SetFake() {
+	s.Null = true
+}
+
+// SetFake set fake values.
+func (s *NilNosqlApplianceInterfacesItem) SetFake() {
+	s.Null = true
+}
+
+// SetFake set fake values.
 func (s *NodeHealth) SetFake() {
 	{
 		{
@@ -810,7 +839,7 @@ func (s *NosqlAppliance) SetFake() {
 		{
 			s.Interfaces = nil
 			for i := 0; i < 0; i++ {
-				var elem NosqlApplianceInterfacesItem
+				var elem NilNosqlApplianceInterfacesItem
 				{
 					elem.SetFake()
 				}
@@ -964,12 +993,31 @@ func (s *NosqlApplianceRemark) SetFake() {
 	}
 	{
 		{
+			s.Network.SetFake()
+		}
+	}
+	{
+		{
 			s.Zone.SetFake()
 		}
 	}
 	{
 		{
 			s.ServiceClass.SetFake()
+		}
+	}
+}
+
+// SetFake set fake values.
+func (s *NosqlApplianceRemarkNetwork) SetFake() {
+	{
+		{
+			s.DefaultRoute = "string"
+		}
+	}
+	{
+		{
+			s.NetworkMaskLen = int(0)
 		}
 	}
 }
@@ -1887,6 +1935,25 @@ func (s *NosqlRemark) SetFake() {
 			}
 		}
 	}
+	{
+		{
+			s.Network.SetFake()
+		}
+	}
+}
+
+// SetFake set fake values.
+func (s *NosqlRemarkNetwork) SetFake() {
+	{
+		{
+			s.DefaultRoute = "string"
+		}
+	}
+	{
+		{
+			s.NetworkMaskLen = int(0)
+		}
+	}
 }
 
 // SetFake set fake values.
@@ -2582,8 +2649,26 @@ func (s *OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet) SetFake() {
 }
 
 // SetFake set fake values.
+func (s *OptGetNosqlApplianceInterfacesItemSwitchUserSubnet) SetFake() {
+	var elem GetNosqlApplianceInterfacesItemSwitchUserSubnet
+	{
+		elem.SetFake()
+	}
+	s.SetTo(elem)
+}
+
+// SetFake set fake values.
 func (s *OptGetNosqlApplianceRemark) SetFake() {
 	var elem GetNosqlApplianceRemark
+	{
+		elem.SetFake()
+	}
+	s.SetTo(elem)
+}
+
+// SetFake set fake values.
+func (s *OptGetNosqlApplianceRemarkNetwork) SetFake() {
+	var elem GetNosqlApplianceRemarkNetwork
 	{
 		elem.SetFake()
 	}
@@ -2813,12 +2898,6 @@ func (s *OptNilGetNosqlApplianceInterfacesItemSwitchSubnet) SetFake() {
 }
 
 // SetFake set fake values.
-func (s *OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) SetFake() {
-	s.Null = true
-	s.Set = true
-}
-
-// SetFake set fake values.
 func (s *OptNilGetNosqlSettingsBackup) SetFake() {
 	s.Null = true
 	s.Set = true
@@ -2849,19 +2928,25 @@ func (s *OptNilNosqlApplianceDisk) SetFake() {
 }
 
 // SetFake set fake values.
+func (s *OptNilNosqlApplianceDiskEncryptionKey) SetFake() {
+	s.Null = true
+	s.Set = true
+}
+
+// SetFake set fake values.
 func (s *OptNilNosqlApplianceInterfacesItemSwitchSubnet) SetFake() {
 	s.Null = true
 	s.Set = true
 }
 
 // SetFake set fake values.
-func (s *OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) SetFake() {
+func (s *OptNilNosqlCreateRequestApplianceDisk) SetFake() {
 	s.Null = true
 	s.Set = true
 }
 
 // SetFake set fake values.
-func (s *OptNilNosqlCreateRequestApplianceDisk) SetFake() {
+func (s *OptNilNosqlCreateRequestApplianceDiskEncryptionKey) SetFake() {
 	s.Null = true
 	s.Set = true
 }
@@ -2960,15 +3045,6 @@ func (s *OptNosqlAppliance) SetFake() {
 }
 
 // SetFake set fake values.
-func (s *OptNosqlApplianceDiskEncryptionKey) SetFake() {
-	var elem NosqlApplianceDiskEncryptionKey
-	{
-		elem.SetFake()
-	}
-	s.SetTo(elem)
-}
-
-// SetFake set fake values.
 func (s *OptNosqlApplianceInterfacesItemSwitch) SetFake() {
 	var elem NosqlApplianceInterfacesItemSwitch
 	{
@@ -2980,6 +3056,15 @@ func (s *OptNosqlApplianceInterfacesItemSwitch) SetFake() {
 // SetFake set fake values.
 func (s *OptNosqlApplianceInterfacesItemSwitchSubnetInternet) SetFake() {
 	var elem NosqlApplianceInterfacesItemSwitchSubnetInternet
+	{
+		elem.SetFake()
+	}
+	s.SetTo(elem)
+}
+
+// SetFake set fake values.
+func (s *OptNosqlApplianceInterfacesItemSwitchUserSubnet) SetFake() {
+	var elem NosqlApplianceInterfacesItemSwitchUserSubnet
 	{
 		elem.SetFake()
 	}
@@ -3061,15 +3146,6 @@ func (s *OptNosqlApplianceRemarkZone) SetFake() {
 // SetFake set fake values.
 func (s *OptNosqlBackupResponseNosql) SetFake() {
 	var elem NosqlBackupResponseNosql
-	{
-		elem.SetFake()
-	}
-	s.SetTo(elem)
-}
-
-// SetFake set fake values.
-func (s *OptNosqlCreateRequestApplianceDiskEncryptionKey) SetFake() {
-	var elem NosqlCreateRequestApplianceDiskEncryptionKey
 	{
 		elem.SetFake()
 	}

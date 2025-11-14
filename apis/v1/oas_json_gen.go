@@ -607,9 +607,9 @@ func (s *GetNosqlAppliance) Decode(d *jx.Decoder) error {
 			}
 		case "Interfaces":
 			if err := func() error {
-				s.Interfaces = make([]GetNosqlApplianceInterfacesItem, 0)
+				s.Interfaces = make([]NilGetNosqlApplianceInterfacesItem, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
-					var elem GetNosqlApplianceInterfacesItem
+					var elem NilGetNosqlApplianceInterfacesItem
 					if err := elem.Decode(d); err != nil {
 						return err
 					}
@@ -1317,6 +1317,12 @@ func (s *GetNosqlApplianceRemark) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.Network.Set {
+			e.FieldStart("Network")
+			s.Network.Encode(e)
+		}
+	}
+	{
 		if s.Zone.Set {
 			e.FieldStart("Zone")
 			s.Zone.Encode(e)
@@ -1330,11 +1336,12 @@ func (s *GetNosqlApplianceRemark) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfGetNosqlApplianceRemark = [4]string{
+var jsonFieldsNameOfGetNosqlApplianceRemark = [5]string{
 	0: "Nosql",
 	1: "Servers",
-	2: "Zone",
-	3: "ServiceClass",
+	2: "Network",
+	3: "Zone",
+	4: "ServiceClass",
 }
 
 // Decode decodes GetNosqlApplianceRemark from json.
@@ -1371,6 +1378,16 @@ func (s *GetNosqlApplianceRemark) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"Servers\"")
+			}
+		case "Network":
+			if err := func() error {
+				s.Network.Reset()
+				if err := s.Network.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"Network\"")
 			}
 		case "Zone":
 			if err := func() error {
@@ -1412,6 +1429,86 @@ func (s *GetNosqlApplianceRemark) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *GetNosqlApplianceRemark) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *GetNosqlApplianceRemarkNetwork) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *GetNosqlApplianceRemarkNetwork) encodeFields(e *jx.Encoder) {
+	{
+		if s.DefaultRoute.Set {
+			e.FieldStart("DefaultRoute")
+			s.DefaultRoute.Encode(e)
+		}
+	}
+	{
+		if s.NetworkMaskLen.Set {
+			e.FieldStart("NetworkMaskLen")
+			s.NetworkMaskLen.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfGetNosqlApplianceRemarkNetwork = [2]string{
+	0: "DefaultRoute",
+	1: "NetworkMaskLen",
+}
+
+// Decode decodes GetNosqlApplianceRemarkNetwork from json.
+func (s *GetNosqlApplianceRemarkNetwork) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode GetNosqlApplianceRemarkNetwork to nil")
+	}
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "DefaultRoute":
+			if err := func() error {
+				s.DefaultRoute.Reset()
+				if err := s.DefaultRoute.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"DefaultRoute\"")
+			}
+		case "NetworkMaskLen":
+			if err := func() error {
+				s.NetworkMaskLen.Reset()
+				if err := s.NetworkMaskLen.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"NetworkMaskLen\"")
+			}
+		default:
+			return d.Skip()
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode GetNosqlApplianceRemarkNetwork")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *GetNosqlApplianceRemarkNetwork) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *GetNosqlApplianceRemarkNetwork) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -3427,6 +3524,94 @@ func (s *IsOk) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes GetNosqlApplianceInterfacesItem as json.
+func (o NilGetNosqlApplianceInterfacesItem) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes GetNosqlApplianceInterfacesItem from json.
+func (o *NilGetNosqlApplianceInterfacesItem) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilGetNosqlApplianceInterfacesItem to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v GetNosqlApplianceInterfacesItem
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilGetNosqlApplianceInterfacesItem) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilGetNosqlApplianceInterfacesItem) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes NosqlApplianceInterfacesItem as json.
+func (o NilNosqlApplianceInterfacesItem) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes NosqlApplianceInterfacesItem from json.
+func (o *NilNosqlApplianceInterfacesItem) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilNosqlApplianceInterfacesItem to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v NosqlApplianceInterfacesItem
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilNosqlApplianceInterfacesItem) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilNosqlApplianceInterfacesItem) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
 func (s *NodeHealth) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -3919,9 +4104,9 @@ func (s *NosqlAppliance) Decode(d *jx.Decoder) error {
 			}
 		case "Interfaces":
 			if err := func() error {
-				s.Interfaces = make([]NosqlApplianceInterfacesItem, 0)
+				s.Interfaces = make([]NilNosqlApplianceInterfacesItem, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
-					var elem NosqlApplianceInterfacesItem
+					var elem NilNosqlApplianceInterfacesItem
 					if err := elem.Decode(d); err != nil {
 						return err
 					}
@@ -4650,14 +4835,16 @@ func (s *NosqlApplianceRemark) encodeFields(e *jx.Encoder) {
 		s.Nosql.Encode(e)
 	}
 	{
-		if s.Servers != nil {
-			e.FieldStart("Servers")
-			e.ArrStart()
-			for _, elem := range s.Servers {
-				elem.Encode(e)
-			}
-			e.ArrEnd()
+		e.FieldStart("Servers")
+		e.ArrStart()
+		for _, elem := range s.Servers {
+			elem.Encode(e)
 		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("Network")
+		s.Network.Encode(e)
 	}
 	{
 		if s.Zone.Set {
@@ -4673,11 +4860,12 @@ func (s *NosqlApplianceRemark) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfNosqlApplianceRemark = [4]string{
+var jsonFieldsNameOfNosqlApplianceRemark = [5]string{
 	0: "Nosql",
 	1: "Servers",
-	2: "Zone",
-	3: "ServiceClass",
+	2: "Network",
+	3: "Zone",
+	4: "ServiceClass",
 }
 
 // Decode decodes NosqlApplianceRemark from json.
@@ -4700,6 +4888,7 @@ func (s *NosqlApplianceRemark) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"Nosql\"")
 			}
 		case "Servers":
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				s.Servers = make([]NosqlApplianceRemarkServersItem, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -4715,6 +4904,16 @@ func (s *NosqlApplianceRemark) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"Servers\"")
+			}
+		case "Network":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.Network.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"Network\"")
 			}
 		case "Zone":
 			if err := func() error {
@@ -4746,7 +4945,7 @@ func (s *NosqlApplianceRemark) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000001,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4788,6 +4987,119 @@ func (s *NosqlApplianceRemark) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NosqlApplianceRemark) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *NosqlApplianceRemarkNetwork) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *NosqlApplianceRemarkNetwork) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("DefaultRoute")
+		e.Str(s.DefaultRoute)
+	}
+	{
+		e.FieldStart("NetworkMaskLen")
+		e.Int(s.NetworkMaskLen)
+	}
+}
+
+var jsonFieldsNameOfNosqlApplianceRemarkNetwork = [2]string{
+	0: "DefaultRoute",
+	1: "NetworkMaskLen",
+}
+
+// Decode decodes NosqlApplianceRemarkNetwork from json.
+func (s *NosqlApplianceRemarkNetwork) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode NosqlApplianceRemarkNetwork to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "DefaultRoute":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.DefaultRoute = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"DefaultRoute\"")
+			}
+		case "NetworkMaskLen":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int()
+				s.NetworkMaskLen = int(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"NetworkMaskLen\"")
+			}
+		default:
+			return d.Skip()
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode NosqlApplianceRemarkNetwork")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfNosqlApplianceRemarkNetwork) {
+					name = jsonFieldsNameOfNosqlApplianceRemarkNetwork[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *NosqlApplianceRemarkNetwork) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NosqlApplianceRemarkNetwork) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -10042,20 +10354,23 @@ func (s *NosqlRemark) encodeFields(e *jx.Encoder) {
 		s.Nosql.Encode(e)
 	}
 	{
-		if s.Servers != nil {
-			e.FieldStart("Servers")
-			e.ArrStart()
-			for _, elem := range s.Servers {
-				elem.Encode(e)
-			}
-			e.ArrEnd()
+		e.FieldStart("Servers")
+		e.ArrStart()
+		for _, elem := range s.Servers {
+			elem.Encode(e)
 		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("Network")
+		s.Network.Encode(e)
 	}
 }
 
-var jsonFieldsNameOfNosqlRemark = [2]string{
+var jsonFieldsNameOfNosqlRemark = [3]string{
 	0: "Nosql",
 	1: "Servers",
+	2: "Network",
 }
 
 // Decode decodes NosqlRemark from json.
@@ -10078,6 +10393,7 @@ func (s *NosqlRemark) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"Nosql\"")
 			}
 		case "Servers":
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				s.Servers = make([]NosqlRemarkServersItem, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -10094,6 +10410,16 @@ func (s *NosqlRemark) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"Servers\"")
 			}
+		case "Network":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.Network.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"Network\"")
+			}
 		default:
 			return d.Skip()
 		}
@@ -10104,7 +10430,7 @@ func (s *NosqlRemark) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000001,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -10146,6 +10472,119 @@ func (s *NosqlRemark) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NosqlRemark) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *NosqlRemarkNetwork) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *NosqlRemarkNetwork) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("DefaultRoute")
+		e.Str(s.DefaultRoute)
+	}
+	{
+		e.FieldStart("NetworkMaskLen")
+		e.Int(s.NetworkMaskLen)
+	}
+}
+
+var jsonFieldsNameOfNosqlRemarkNetwork = [2]string{
+	0: "DefaultRoute",
+	1: "NetworkMaskLen",
+}
+
+// Decode decodes NosqlRemarkNetwork from json.
+func (s *NosqlRemarkNetwork) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode NosqlRemarkNetwork to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "DefaultRoute":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.DefaultRoute = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"DefaultRoute\"")
+			}
+		case "NetworkMaskLen":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int()
+				s.NetworkMaskLen = int(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"NetworkMaskLen\"")
+			}
+		default:
+			return d.Skip()
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode NosqlRemarkNetwork")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfNosqlRemarkNetwork) {
+					name = jsonFieldsNameOfNosqlRemarkNetwork[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *NosqlRemarkNetwork) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NosqlRemarkNetwork) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -14225,6 +14664,39 @@ func (s *OptGetNosqlApplianceInterfacesItemSwitchSubnetInternet) UnmarshalJSON(d
 	return s.Decode(d)
 }
 
+// Encode encodes GetNosqlApplianceInterfacesItemSwitchUserSubnet as json.
+func (o OptGetNosqlApplianceInterfacesItemSwitchUserSubnet) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes GetNosqlApplianceInterfacesItemSwitchUserSubnet from json.
+func (o *OptGetNosqlApplianceInterfacesItemSwitchUserSubnet) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptGetNosqlApplianceInterfacesItemSwitchUserSubnet to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptGetNosqlApplianceInterfacesItemSwitchUserSubnet) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptGetNosqlApplianceInterfacesItemSwitchUserSubnet) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes GetNosqlApplianceRemark as json.
 func (o OptGetNosqlApplianceRemark) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -14254,6 +14726,39 @@ func (s OptGetNosqlApplianceRemark) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptGetNosqlApplianceRemark) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes GetNosqlApplianceRemarkNetwork as json.
+func (o OptGetNosqlApplianceRemarkNetwork) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes GetNosqlApplianceRemarkNetwork from json.
+func (o *OptGetNosqlApplianceRemarkNetwork) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptGetNosqlApplianceRemarkNetwork to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptGetNosqlApplianceRemarkNetwork) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptGetNosqlApplianceRemarkNetwork) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -15186,55 +15691,6 @@ func (s *OptNilGetNosqlApplianceInterfacesItemSwitchSubnet) UnmarshalJSON(data [
 	return s.Decode(d)
 }
 
-// Encode encodes GetNosqlApplianceInterfacesItemSwitchUserSubnet as json.
-func (o OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	if o.Null {
-		e.Null()
-		return
-	}
-	o.Value.Encode(e)
-}
-
-// Decode decodes GetNosqlApplianceInterfacesItemSwitchUserSubnet from json.
-func (o *OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet to nil")
-	}
-	if d.Next() == jx.Null {
-		if err := d.Null(); err != nil {
-			return err
-		}
-
-		var v GetNosqlApplianceInterfacesItemSwitchUserSubnet
-		o.Value = v
-		o.Set = true
-		o.Null = true
-		return nil
-	}
-	o.Set = true
-	o.Null = false
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptNilGetNosqlApplianceInterfacesItemSwitchUserSubnet) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
 // Encode encodes GetNosqlSettingsBackup as json.
 func (o OptNilGetNosqlSettingsBackup) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -15492,6 +15948,55 @@ func (s *OptNilNosqlApplianceDisk) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes NosqlApplianceDiskEncryptionKey as json.
+func (o OptNilNosqlApplianceDiskEncryptionKey) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes NosqlApplianceDiskEncryptionKey from json.
+func (o *OptNilNosqlApplianceDiskEncryptionKey) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptNilNosqlApplianceDiskEncryptionKey to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v NosqlApplianceDiskEncryptionKey
+		o.Value = v
+		o.Set = true
+		o.Null = true
+		return nil
+	}
+	o.Set = true
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptNilNosqlApplianceDiskEncryptionKey) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptNilNosqlApplianceDiskEncryptionKey) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes NosqlApplianceInterfacesItemSwitchSubnet as json.
 func (o OptNilNosqlApplianceInterfacesItemSwitchSubnet) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -15541,55 +16046,6 @@ func (s *OptNilNosqlApplianceInterfacesItemSwitchSubnet) UnmarshalJSON(data []by
 	return s.Decode(d)
 }
 
-// Encode encodes NosqlApplianceInterfacesItemSwitchUserSubnet as json.
-func (o OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	if o.Null {
-		e.Null()
-		return
-	}
-	o.Value.Encode(e)
-}
-
-// Decode decodes NosqlApplianceInterfacesItemSwitchUserSubnet from json.
-func (o *OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptNilNosqlApplianceInterfacesItemSwitchUserSubnet to nil")
-	}
-	if d.Next() == jx.Null {
-		if err := d.Null(); err != nil {
-			return err
-		}
-
-		var v NosqlApplianceInterfacesItemSwitchUserSubnet
-		o.Value = v
-		o.Set = true
-		o.Null = true
-		return nil
-	}
-	o.Set = true
-	o.Null = false
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptNilNosqlApplianceInterfacesItemSwitchUserSubnet) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
 // Encode encodes NosqlCreateRequestApplianceDisk as json.
 func (o OptNilNosqlCreateRequestApplianceDisk) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -15635,6 +16091,55 @@ func (s OptNilNosqlCreateRequestApplianceDisk) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptNilNosqlCreateRequestApplianceDisk) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes NosqlCreateRequestApplianceDiskEncryptionKey as json.
+func (o OptNilNosqlCreateRequestApplianceDiskEncryptionKey) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes NosqlCreateRequestApplianceDiskEncryptionKey from json.
+func (o *OptNilNosqlCreateRequestApplianceDiskEncryptionKey) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptNilNosqlCreateRequestApplianceDiskEncryptionKey to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v NosqlCreateRequestApplianceDiskEncryptionKey
+		o.Value = v
+		o.Set = true
+		o.Null = true
+		return nil
+	}
+	o.Set = true
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptNilNosqlCreateRequestApplianceDiskEncryptionKey) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptNilNosqlCreateRequestApplianceDiskEncryptionKey) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -16315,39 +16820,6 @@ func (s *OptNosqlAppliance) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes NosqlApplianceDiskEncryptionKey as json.
-func (o OptNosqlApplianceDiskEncryptionKey) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	o.Value.Encode(e)
-}
-
-// Decode decodes NosqlApplianceDiskEncryptionKey from json.
-func (o *OptNosqlApplianceDiskEncryptionKey) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptNosqlApplianceDiskEncryptionKey to nil")
-	}
-	o.Set = true
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptNosqlApplianceDiskEncryptionKey) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptNosqlApplianceDiskEncryptionKey) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
 // Encode encodes NosqlApplianceInterfacesItemSwitch as json.
 func (o OptNosqlApplianceInterfacesItemSwitch) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -16410,6 +16882,39 @@ func (s OptNosqlApplianceInterfacesItemSwitchSubnetInternet) MarshalJSON() ([]by
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptNosqlApplianceInterfacesItemSwitchSubnetInternet) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes NosqlApplianceInterfacesItemSwitchUserSubnet as json.
+func (o OptNosqlApplianceInterfacesItemSwitchUserSubnet) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes NosqlApplianceInterfacesItemSwitchUserSubnet from json.
+func (o *OptNosqlApplianceInterfacesItemSwitchUserSubnet) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptNosqlApplianceInterfacesItemSwitchUserSubnet to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptNosqlApplianceInterfacesItemSwitchUserSubnet) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptNosqlApplianceInterfacesItemSwitchUserSubnet) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -16707,39 +17212,6 @@ func (s OptNosqlBackupResponseNosql) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptNosqlBackupResponseNosql) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes NosqlCreateRequestApplianceDiskEncryptionKey as json.
-func (o OptNosqlCreateRequestApplianceDiskEncryptionKey) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	o.Value.Encode(e)
-}
-
-// Decode decodes NosqlCreateRequestApplianceDiskEncryptionKey from json.
-func (o *OptNosqlCreateRequestApplianceDiskEncryptionKey) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptNosqlCreateRequestApplianceDiskEncryptionKey to nil")
-	}
-	o.Set = true
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptNosqlCreateRequestApplianceDiskEncryptionKey) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptNosqlCreateRequestApplianceDiskEncryptionKey) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

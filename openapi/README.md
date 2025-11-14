@@ -2,17 +2,17 @@ NoSQL OpenAPI定義は以下のページで公開されています。
 
 https://manual.sakura.ad.jp/api/cloud/nosql/
 
-現在はv1.4.0を利用しています。
+現在はv1.4.1を利用しています。
 
 # diff
 
-この実装では幾つかの不具合に対応するため公開されているOpenAPI定義から以下の変更を行っています.
+この実装では幾つかの不具合に対応するため公開されているOpenAPI定義を修正しています.
 OpenAPI定義もしくはAPI側が修正され次第更新します。
 
 ```diff
-diff --git a/openapi/openapi.json b/openapi/openapi.json
-index 535cf38..6d51858 100644
---- a/openapi/openapi.json
+ddiff --git a/Users/masa-nakagawa/Downloads/openapi.json b/openapi/openapi.json
+index 303c14e..d57b989 100644
+--- a/Users/masa-nakagawa/Downloads/openapi.json
 +++ b/openapi/openapi.json
 @@ -159,6 +159,9 @@
            "401": {
@@ -33,7 +33,7 @@ index 535cf38..6d51858 100644
              "description": "NoSQL削除受け付け成功時のレスポンス",
              "content": {
                "application/json": {
-@@ -1255,7 +1258,8 @@
+@@ -1277,7 +1280,8 @@
            "StatusChangedAt": {
              "type": "string",
              "format": "date-time",
@@ -43,15 +43,31 @@ index 535cf38..6d51858 100644
            },
            "Host": {
              "type": "object",
-@@ -1503,6 +1507,7 @@
-                         "UserSubnet": {
-                           "type": "object",
-                           "description": "ユーザサブネット情報",
-+                          "nullable": true,
-                           "properties": {
-                             "DefaultRoute": {
-                               "type": "string",
-@@ -1722,7 +1727,8 @@
+@@ -1418,6 +1422,7 @@
+                   "EncryptionKey": {
+                     "type": "object",
+                     "description": "暗号化キー情報",
++                    "nullable": true,
+                     "properties": {
+                       "KMSKeyID": {
+                         "type": "string",
+@@ -1449,6 +1454,7 @@
+                 "type": "array",
+                 "items": {
+                   "type": "object",
++                  "nullable": true,
+                   "properties": {
+                     "IPAddress": {
+                       "type": "string",
+@@ -1574,6 +1580,7 @@
+                       "EncryptionKey": {
+                         "type": "object",
+                         "description": "暗号化キー情報",
++                        "nullable": true,
+                         "properties": {
+                           "KMSKeyID": {
+                             "type": "string",
+@@ -1744,7 +1751,8 @@
              "$ref": "#/components/schemas/Tags"
            },
            "Availability": {
@@ -61,7 +77,15 @@ index 535cf38..6d51858 100644
            },
            "ServerCount": {
              "type": "integer",
-@@ -2818,6 +2824,7 @@
+@@ -2348,7 +2356,6 @@
+             "type": "string",
+             "format": "ipv4",
+             "description": "ユーザ側スイッチに接続するIPアドレス",
+-            "pattern": "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$",
+             "example": "192.168.100.11"
+           },
+           "NodeType": {
+@@ -2856,6 +2863,7 @@
                    "EncryptionKey": {
                      "type": "object",
                      "description": "暗号化キー情報",
@@ -69,12 +93,13 @@ index 535cf38..6d51858 100644
                      "properties": {
                        "KMSKeyID": {
                          "type": "string",
-@@ -2922,6 +2929,7 @@
-                         "UserSubnet": {
-                           "type": "object",
-                           "description": "ユーザサブネット情報",
-+                          "nullable": true,
-                           "properties": {
-                             "DefaultRoute": {
-                               "type": "string",
+@@ -2887,6 +2895,7 @@
+                 "type": "array",
+                 "items": {
+                   "type": "object",
++                  "nullable": true,
+                   "properties": {
+                     "IPAddress": {
+                       "type": "string",
+
 ```
