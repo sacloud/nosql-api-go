@@ -1,16 +1,5 @@
-// Copyright 2025- The sacloud/nosql-api-go authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2016-2025 The terraform-provider-sakura Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package nosql
 
@@ -23,7 +12,7 @@ import (
 
 type DatabaseAPI interface {
 	List(ctx context.Context) ([]v1.GetNosqlAppliance, error)
-	Create(ctx context.Context, request v1.NosqlCreateRequestAppliance) (*v1.NosqlCreateResponse, error)
+	Create(ctx context.Context, plan Plan, request v1.NosqlCreateRequestAppliance) (*v1.NosqlAppliance, error)
 	Read(ctx context.Context, id string) (*v1.GetNosqlAppliance, error)
 	Update(ctx context.Context, id string, request v1.NosqlUpdateRequestAppliance) error
 	Delete(ctx context.Context, id string) error
@@ -61,10 +50,16 @@ func (op *databaseOp) List(ctx context.Context) ([]v1.GetNosqlAppliance, error) 
 	}
 }
 
-func (op *databaseOp) Create(ctx context.Context, request v1.NosqlCreateRequestAppliance) (*v1.NosqlCreateResponse, error) {
+func (op *databaseOp) Create(ctx context.Context, plan Plan, request v1.NosqlCreateRequestAppliance) (*v1.NosqlAppliance, error) {
 	request.Class = "nosql"
-	request.Plan = v1.Plan{ID: v1.NewOptInt(51004)}
-	request.ServiceClass = "cloud/nosql/beta"
+	request.Plan = v1.Plan{ID: plan.GetPlanID()}
+	request.ServiceClass = plan.GetServiceClass()
+	// TODO: 不具合が修正されたら削除
+	request.Remark.Nosql.DiskSize = v1.NewOptNilInt(plan.GetDiskSizeMB())
+	request.Remark.Nosql.Memory = v1.NewOptNilInt(plan.GetMemoryMB())
+	request.Remark.Nosql.Nodes = v1.NewOptNilInt(plan.GetNodes())
+	request.Remark.Nosql.Virtualcore = v1.NewOptNilInt(plan.GetVirtualCore())
+
 	res, err := op.client.CreateDB(ctx, &v1.NosqlCreateRequest{Appliance: request})
 	if err != nil {
 		return nil, NewAPIError("Database.Create", 0, err)
@@ -72,7 +67,7 @@ func (op *databaseOp) Create(ctx context.Context, request v1.NosqlCreateRequestA
 
 	switch p := res.(type) {
 	case *v1.NosqlCreateResponse:
-		return p, nil
+		return &p.Appliance, nil
 	case *v1.BadRequestResponse:
 		return nil, NewAPIError("Database.Create", 400, errors.New(p.ErrorMsg.Value))
 	case *v1.UnauthorizedResponse:

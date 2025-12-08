@@ -1,15 +1,15 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "version": "1.4.1",
-    "title": "NoSQL CR APIドキュメント",
+    "version": "2.0.1",
+    "title": "NoSQL APIドキュメント",
     "contact": {
       "name": "SAKURA internet Inc."
     },
     "license": {
       "name": "Copyright(C) SAKURA internet Inc. all rights reserved."
     },
-    "description": "---\n「NoSQL」が提供するAPIの利用方法とサンプルを公開しております。\n# 基本的な使い方\n## APIキーの発行\nAPIを利用するためには、認証のための「APIキー」が必要です。事前にキーを発行しておきます。  \nAPIキーは「ユーザID」「パスワード」に相当する「トークン」と呼ばれる認証情報で構成されています。\n|   項目名   | APIキー発行時の項目名        | このドキュメント内での例             |\n|------------|------------------------------|--------------------------------------|\n| ユーザID | アクセストークン(UUID)       | 01234567-89ab-cdef-0123-456789abcdef |\n| パスワード | アクセストークンシークレット | SAMPLETOKENSAMPLETOKENSAMPLETOKENSAM |\n<div class=\"warning\">\n  <b>操作マニュアル</b><br />\n  <ul><li><a href=\"https://manual.sakura.ad.jp/cloud/api/apikey.html\">APIキー | さくらのクラウド ドキュメント</a></li></ul>\n</div>\n\n## APIエンドポイント\nhttps://secure.sakura.ad.jp/cloud/zone/tk1b/api/cloud/1.1\n\n### 用語\n\n- **プライマリノード (PrimaryNodes)**  \n  新規作成時に作成されるノード群を指します。  \n  本マニュアルではこれを「プライマリノード」と呼びます。  \n  新規作成では 3 ノード構成で提供されます。\n"
+    "description": "---\n「NoSQL」が提供するAPIの利用方法とサンプルを公開しております。\n# 基本的な使い方\n## APIキーの発行\nAPIを利用するためには、認証のための「APIキー」が必要です。事前にキーを発行しておきます。  \nAPIキーは「ユーザID」「パスワード」に相当する「トークン」と呼ばれる認証情報で構成されています。\n|   項目名   | APIキー発行時の項目名        | このドキュメント内での例             |\n|------------|------------------------------|--------------------------------------|\n| ユーザID | アクセストークン(UUID)       | 01234567-89ab-cdef-0123-456789abcdef |\n| パスワード | アクセストークンシークレット | SAMPLETOKENSAMPLETOKENSAMPLETOKENSAM |\n<div class=\"warning\">\n  <b>操作マニュアル</b><br />\n  <ul><li><a href=\"https://manual.sakura.ad.jp/cloud/api/apikey.html\">APIキー | さくらのクラウド ドキュメント</a></li></ul>\n</div>\n\n## APIエンドポイント\nhttps://secure.sakura.ad.jp/cloud/zone/tk1b/api/cloud/1.1\n\n### 用語\n\n- **プライマリノード (PrimaryNodes)**  \n  新規作成時に作成されるノード群を指します。  \n  本マニュアルではこれを「プライマリノード」と呼びます。  \n\n# NoSQLプラン\n| プラン名 | 仮想コア数 | メモリ(MB) | ディスクサイズ(MB) | ノード数 | 追加ノード可能数 |\n|---------|-----------|------------|------------------|----------|-----------------|\n| 40GBプラン  |     2     |    4096    |   40960         |    1      |      追加不可    |\n| 100GBプラン  |     3     |    8192    |   102400        |    3      |      2台*3回     |\n| 250GBプラン  |     6     |    16384   |   256000        |    3      |      2台*3回     |\n"
   },
   "servers": [
     {
@@ -90,7 +90,7 @@
           "NoSQL"
         ],
         "summary": "NoSQL作成API",
-        "description": "NoSQLの新規作成および既存NoSQLへのノード追加を行います。  \n新規作成では3台構成で作成されます。  \nノード追加では、2台ずつ追加され、NoSQL全体で最大9台まで構成可能です。  \n新規作成時とノード追加時では、必要となる項目が異なります。  \n各操作ごとの必須項目は、スキーマ定義内の各プロパティの説明欄に明記していますので、詳細はそちらをご参照ください。  \n- **新規作成時必須**: 新規作成の際に必須の項目\n- **ノード追加時必須**: ノード追加の際に必須の項目\n- **新規作成時・ノード追加時必須**: 新規作成・ノード追加時に必須の項目  \n\n※ノード追加では、既存NoSQLの設定情報（**ノード追加時必須**以外の項目）と一致させるか未指定である必要があります。  \n",
+        "description": "NoSQLの新規作成および既存NoSQLへのノード追加を行います。  \n新規作成時とノード追加時では、必要となる項目が異なります。  \n各操作ごとの必須項目は、スキーマ定義内の各プロパティの説明欄に明記していますので、詳細はそちらをご参照ください。  \n- **新規作成時必須**: 新規作成の際に必須の項目\n- **ノード追加時必須**: ノード追加の際に必須の項目\n- **新規作成時・ノード追加時必須**: 新規作成・ノード追加の両方で必須の項目\n\n※ノード追加では、既存NoSQLの設定情報（**ノード追加時必須**以外の項目）と一致させるか未指定である必要があります。  \n",
         "operationId": "CreateDB",
         "requestBody": {
           "description": "NoSQLの作成を行うためのリクエストボディ",
@@ -223,7 +223,7 @@
           "NoSQL"
         ],
         "summary": "NoSQL削除API",
-        "description": "対象のNoSQLを削除します。  \nプライマリノードのアプライアンスIDを指定しての削除ではノード追加したデータは削除されません。  \nノード追加している場合は、追加ノードのアプライアンスIDを指定して、個別に削除する必要があります。\n",
+        "description": "対象のNoSQLを削除します。  \nプライマリノードのアプライアンスIDを指定して削除する場合、ノード追加したデータは削除されません。  \nノード追加している場合は、追加ノードのアプライアンスIDを指定して、個別に削除する必要があります。\n",
         "operationId": "DeleteDB",
         "parameters": [
           {
@@ -944,6 +944,15 @@
       "NosqlSettings": {
         "type": "object",
         "properties": {
+          "Password": {
+            "$ref": "#/components/schemas/Password"
+          },
+          "ReserveIPAddress": {
+            "description": "予備IPアドレス  \n**新規作成時・ノード追加時必須**  \n※デッドノード発生時、ノード切替を行う際に使用する予備のIPアドレス  \nただし、40GBプランの場合は必須ではありません。\n",
+            "type": "string",
+            "format": "ipv4",
+            "example": "192.168.100.203"
+          },
           "Backup": {
             "type": "object",
             "description": "バックアップ情報",
@@ -981,7 +990,7 @@
                 "description": "バックアップする時間",
                 "nullable": true,
                 "example": "00:00",
-                "pattern": "^(([0-1][0-9]|2[0-3]):(00|15|30|45))$"
+                "pattern": "^(([0-1][0-9]|2[0-3]):(00|15|30|45))?$"
               },
               "Rotate": {
                 "type": "integer",
@@ -992,7 +1001,8 @@
               }
             },
             "required": [
-              "Connect"
+              "Connect",
+              "Rotate"
             ]
           },
           "SourceNetwork": {
@@ -1009,15 +1019,9 @@
               "192.168.100.202"
             ]
           },
-          "ReserveIPAddress": {
-            "description": "予備IPアドレス\n**新規作成時必須**  \n※デッドノード発生時、ノード切替を行う際に使用する予備のIPアドレス\n",
-            "type": "string",
-            "format": "ipv4",
-            "example": "192.168.100.203"
-          },
           "Repair": {
             "type": "object",
-            "description": "定期リペア設定",
+            "description": "定期リペア設定  \n※40GBプランはノード数が1のため、リペア設定を行うことはできません。 \n",
             "nullable": true,
             "properties": {
               "Incremental": {
@@ -1047,7 +1051,7 @@
                   "Time": {
                     "type": "string",
                     "description": "実行時間",
-                    "pattern": "^(([0-1][0-9]|2[0-3]):(00|15|30|45))$",
+                    "pattern": "^(([0-1][0-9]|2[0-3]):(00|15|30|45))?$",
                     "example": "00:00"
                   }
                 },
@@ -1088,7 +1092,7 @@
                   "Time": {
                     "type": "string",
                     "description": "実行時間",
-                    "pattern": "^(([0-1][0-9]|2[0-3]):(00|15|30|45))$",
+                    "pattern": "^(([0-1][0-9]|2[0-3]):(00|15|30|45))?$",
                     "example": "00:00"
                   }
                 },
@@ -1148,6 +1152,7 @@
               },
               "DatabaseEngine": {
                 "type": "string",
+                "nullable": true,
                 "description": "データベースに使用するエンジン  \n**新規作成時必須**\n",
                 "enum": [
                   "Cassandra"
@@ -1156,51 +1161,50 @@
               },
               "DatabaseVersion": {
                 "type": "string",
+                "nullable": true,
                 "description": "データベースバージョン  \n**新規作成時必須**\n",
                 "pattern": "^\\d+\\.\\d+\\.\\d+$",
                 "example": "4.1.9"
               },
               "DefaultUser": {
                 "type": "string",
+                "nullable": true,
                 "description": "デフォルトユーザ名  \n**新規作成時必須**\n",
-                "example": "defaultUser01",
-                "minLength": 4,
+                "example": "defaultuser01",
                 "maxLength": 20,
                 "pattern": "^[a-z][a-z0-9_]{3,19}$"
               },
               "DiskSize": {
                 "type": "integer",
-                "description": "ディスクサイズ(MB)  \n**新規作成時必須**\n",
-                "example": 102400,
-                "enum": [
-                  102400
-                ]
+                "nullable": true,
+                "description": "ディスクサイズ(MB)  \n未指定時はプランから自動設定\n",
+                "example": 102400
               },
               "Memory": {
                 "type": "integer",
-                "description": "メモリ(MB)  \n**新規作成時必須**\n",
-                "example": 8192,
-                "enum": [
-                  8192
-                ]
+                "nullable": true,
+                "description": "メモリ(MB)  \n未指定時はプランから自動設定\n",
+                "example": 8192
               },
               "Nodes": {
                 "type": "integer",
-                "description": "ノード数  \n**新規作成時・ノード追加時必須**  \n新規作成時は3、ノード追加時は2を指定してください。\n",
+                "nullable": true,
+                "description": "ノード数  \n未指定時はプランから自動設定\n",
                 "example": 3,
-                "minimum": 2,
+                "minimum": 1,
                 "maximum": 3
               },
               "Port": {
                 "type": "integer",
+                "nullable": true,
                 "description": "ポート  \n**新規作成時必須**\n",
                 "example": 9042,
                 "minimum": 1024,
-                "maximum": 65535,
-                "default": 9042
+                "maximum": 65535
               },
               "Storage": {
                 "type": "string",
+                "nullable": true,
                 "description": "ストレージ  \n**新規作成時必須**\n",
                 "example": "SSD",
                 "enum": [
@@ -1209,11 +1213,9 @@
               },
               "Virtualcore": {
                 "type": "integer",
-                "description": "仮想コア  \n**新規作成時必須**\n",
-                "example": 3,
-                "enum": [
-                  3
-                ]
+                "nullable": true,
+                "description": "仮想コア  \n未指定時はプランから自動設定  \n",
+                "example": 3
               },
               "Zone": {
                 "type": "string",
@@ -1222,7 +1224,6 @@
               }
             },
             "required": [
-              "Nodes",
               "Zone"
             ]
           },
@@ -1279,9 +1280,9 @@
           },
           "StatusChangedAt": {
             "type": "string",
+            "nullable": true,
             "format": "date-time",
-            "example": "2021-01-01T00:00:00Z",
-            "nullable": true
+            "example": "2021-01-01T00:00:00Z"
           },
           "Host": {
             "type": "object",
@@ -1315,8 +1316,8 @@
       },
       "ServiceClass": {
         "type": "string",
-        "description": "サービスクラス  \n**新規作成時・ノード追加時必須**\n",
-        "example": "cloud/nosql/beta"
+        "description": "サービスクラス  \n**新規作成時・ノード追加時必須**\n\n| プラン名      | サービスクラスパス          | \n|--------------|----------------------------|\n| 40GBプラン       |  cloud/nosql/plan/1        |\n| 100GBプラン       |  cloud/nosql/plan/2        |\n| 100GBプラン/ノード |  cloud/nosql/plan/2/node  |\n| 250GBプラン       |  cloud/nosql/plan/3        |\n| 250GBプラン/ノード |  cloud/nosql/plan/3/node  |\n",
+        "example": "cloud/nosql/plan/1"
       },
       "Plan": {
         "type": "object",
@@ -1324,10 +1325,13 @@
         "properties": {
           "ID": {
             "type": "integer",
-            "description": "プランID  \n**新規作成時・ノード追加時必須**\n",
-            "example": 51004
+            "description": "プランID  \n**新規作成時・ノード追加時必須**\n\n利用可能なプランID:\n| プラン名      | プランID   | \n|--------------|------------|\n| 40GBプラン       |   51142    |\n| 100GBプラン       |   51143    |\n| 100GBプラン/ノード |   51145    |\n| 250GBプラン       |   51144    |\n| 250GBプラン/ノード |   51146    |\n",
+            "example": 51142
           }
-        }
+        },
+        "required": [
+          "ID"
+        ]
       },
       "NosqlApplianceInput": {
         "type": "object",
@@ -1402,7 +1406,7 @@
                       "ServiceClass": {
                         "type": "string",
                         "description": "サービスクラス",
-                        "example": "cloud/nosql/beta"
+                        "example": "cloud/nosql/plan/1"
                       }
                     }
                   }
@@ -1426,6 +1430,7 @@
                     "properties": {
                       "KMSKeyID": {
                         "type": "string",
+                        "nullable": true,
                         "description": "KMSキーID",
                         "example": "113700349294"
                       }
@@ -1584,6 +1589,7 @@
                         "properties": {
                           "KMSKeyID": {
                             "type": "string",
+                            "nullable": true,
                             "description": "KMSキーID",
                             "example": "113700349294"
                           }
@@ -1597,26 +1603,7 @@
                     }
                   },
                   "Settings": {
-                    "type": "object",
-                    "allOf": [
-                      {
-                        "$ref": "#/components/schemas/NosqlSettings"
-                      },
-                      {
-                        "type": "object",
-                        "properties": {
-                          "Password": {
-                            "$ref": "#/components/schemas/Password"
-                          },
-                          "ReserveIPAddress": {
-                            "type": "string",
-                            "description": "予備IPアドレス   \n**新規作成時必須**  \n※デッドノード発生の際、一時的な切り替えサーバ。 \n",
-                            "format": "ipv4",
-                            "example": "192.168.100.10"
-                          }
-                        }
-                      }
-                    ]
+                    "$ref": "#/components/schemas/NosqlSettings"
                   },
                   "Remark": {
                     "$ref": "#/components/schemas/NosqlRemark"
@@ -1648,13 +1635,13 @@
                         },
                         "UserIPAddress2": {
                           "type": "string",
-                          "description": "ユーザIPアドレス2  \n**新規作成時・ノード追加時必須**\n",
+                          "description": "ユーザIPアドレス2  \n**新規作成時・ノード追加時必須**  \n40GBプラン（ノード数1）の場合は設定不要です。\n",
                           "format": "ipv4",
                           "example": "192.168.100.12"
                         },
                         "UserIPAddress3": {
                           "type": "string",
-                          "description": "ユーザIPアドレス3  \n**新規作成時必須**\n",
+                          "description": "ユーザIPアドレス3  \n**新規作成時必須**  \n40GBプラン（ノード数1）の場合は設定不要です。\n",
                           "format": "ipv4",
                           "example": "192.168.100.13"
                         },
@@ -1680,7 +1667,8 @@
                       },
                       "required": [
                         "Switch",
-                        "UserIPAddress1"
+                        "UserIPAddress1",
+                        "UserSubnet"
                       ]
                     }
                   }
@@ -1691,7 +1679,8 @@
                   "ServiceClass",
                   "Plan",
                   "Remark",
-                  "UserInterfaces"
+                  "UserInterfaces",
+                  "Settings"
                 ]
               }
             ]
@@ -1707,99 +1696,6 @@
           "Appliance": {
             "$ref": "#/components/schemas/NosqlAppliance"
           },
-          "Class": {
-            "type": "string",
-            "description": "クラス",
-            "example": "nosql"
-          },
-          "Name": {
-            "type": "string",
-            "description": "NoSQLの名前",
-            "example": "CassandraName",
-            "minLength": 1,
-            "maxLength": 64
-          },
-          "Description": {
-            "type": "string",
-            "description": "NoSQLの説明",
-            "example": "説明",
-            "minLength": 0,
-            "maxLength": 512
-          },
-          "Plan": {
-            "$ref": "#/components/schemas/Plan"
-          },
-          "Settings": {
-            "$ref": "#/components/schemas/NosqlSettings"
-          },
-          "Remark": {
-            "$ref": "#/components/schemas/NosqlRemark"
-          },
-          "ID": {
-            "type": "string",
-            "example": "113600097295"
-          },
-          "Account": {
-            "type": "object",
-            "properties": {
-              "ID": {
-                "type": "string"
-              }
-            }
-          },
-          "Tags": {
-            "$ref": "#/components/schemas/Tags"
-          },
-          "Availability": {
-            "type": "integer",
-            "example": 70
-          },
-          "ServerCount": {
-            "type": "integer",
-            "example": 1
-          },
-          "HiddenRemark": {
-            "type": "object",
-            "properties": {
-              "PlanSpec": {
-                "type": "object",
-                "properties": {
-                  "Note": {
-                    "type": "object",
-                    "properties": {
-                      "ID": {
-                        "type": "string"
-                      }
-                    }
-                  },
-                  "ServiceClass": {
-                    "type": "string",
-                    "example": "cloud/nosql/beta"
-                  }
-                }
-              },
-              "Encrypted": {
-                "type": "object",
-                "properties": {
-                  "Algorithm": {
-                    "type": "string"
-                  },
-                  "IV": {
-                    "type": "string"
-                  },
-                  "md5": {
-                    "type": "string"
-                  },
-                  "Associative": {
-                    "type": "boolean"
-                  },
-                  "Data": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          },
           "Success": {
             "$ref": "#/components/schemas/Success"
           },
@@ -1809,7 +1705,8 @@
         },
         "required": [
           "Appliance",
-          "ID"
+          "Success",
+          "is_ok"
         ]
       },
       "NosqlUpdateRequest": {
@@ -1830,20 +1727,7 @@
                     "example": "113600097295"
                   },
                   "Settings": {
-                    "type": "object",
-                    "allOf": [
-                      {
-                        "$ref": "#/components/schemas/NosqlSettings"
-                      },
-                      {
-                        "type": "object",
-                        "properties": {
-                          "Password": {
-                            "$ref": "#/components/schemas/Password"
-                          }
-                        }
-                      }
-                    ]
+                    "$ref": "#/components/schemas/NosqlSettings"
                   }
                 },
                 "required": [
@@ -2384,13 +2268,13 @@
                 "properties": {
                   "Status": {
                     "type": "string",
-                    "description": "NoSQLの状態\n\n| 値        | 説明   |\n|-----------|--------|\n| healthy        | 起動(すべてのノードが起動している)   |\n| healthy-partial | 部分起動(1台のノードが停止している)  |\n| unhealthy       | 停止(2台以上のノードが停止している)   |\n",
+                    "description": "NoSQLの状態\n\n| 値        | 説明   |\n|-----------|--------|\n| healthy        | 起動(すべてのノードが起動している)   |\n| healthy-partial | 部分起動(1台のノードが停止している)  |\n| unhealthy       | 停止(2台以上のノードが停止している)   |\n\n※40GBプランではノードが1台のため、部分起動(`healthy-partial`)は発生しません。\n",
                     "enum": [
                       "healthy",
                       "healthy-partial",
                       "unhealthy"
                     ],
-                    "example": "healthy-partial"
+                    "example": "healthy"
                   }
                 }
               }
@@ -2503,7 +2387,7 @@
                 "description": "バックアップする時間",
                 "nullable": true,
                 "example": "00:00",
-                "pattern": "^(([0-1][0-9]|2[0-3]):(00|15|30|45))$"
+                "pattern": "^(([0-1][0-9]|2[0-3]):(00|15|30|45))?$"
               },
               "Rotate": {
                 "type": "integer",
@@ -2529,7 +2413,7 @@
             ]
           },
           "ReserveIPAddress": {
-            "description": "予備IPアドレス\n※デッドノード発生時、ノード切替を行う際に使用する予備のIPアドレス\n",
+            "description": "予備IPアドレス  \n※デッドノード発生時、ノード切替を行う際に使用する予備のIPアドレス\n",
             "type": "string",
             "format": "ipv4",
             "example": "192.168.100.203"
@@ -2566,7 +2450,7 @@
                   "Time": {
                     "type": "string",
                     "description": "実行時間",
-                    "pattern": "^(([0-1][0-9]|2[0-3]):(00|15|30|45))$",
+                    "pattern": "^(([0-1][0-9]|2[0-3]):(00|15|30|45))?$",
                     "example": "00:00"
                   }
                 }
@@ -2603,7 +2487,7 @@
                   "Time": {
                     "type": "string",
                     "description": "実行時間",
-                    "pattern": "^(([0-1][0-9]|2[0-3]):(00|15|30|45))$",
+                    "pattern": "^(([0-1][0-9]|2[0-3]):(00|15|30|45))?$",
                     "example": "00:00"
                   }
                 }
@@ -2663,7 +2547,7 @@
               "DefaultUser": {
                 "type": "string",
                 "description": "デフォルトユーザ名",
-                "example": "defaultUser01",
+                "example": "defaultuser01",
                 "minLength": 4,
                 "maxLength": 20,
                 "pattern": "^[a-z][a-z0-9_]{3,19}$"
@@ -2673,7 +2557,9 @@
                 "description": "ディスクサイズ(MB)",
                 "example": 102400,
                 "enum": [
-                  102400
+                  40960,
+                  102400,
+                  256000
                 ]
               },
               "Memory": {
@@ -2681,14 +2567,16 @@
                 "description": "メモリ(MB)",
                 "example": 8192,
                 "enum": [
-                  8192
+                  4096,
+                  8192,
+                  16384
                 ]
               },
               "Nodes": {
                 "type": "integer",
                 "description": "ノード数",
                 "example": 3,
-                "minimum": 2,
+                "minimum": 1,
                 "maximum": 3
               },
               "Port": {
@@ -2696,8 +2584,7 @@
                 "description": "ポート",
                 "example": 9042,
                 "minimum": 1024,
-                "maximum": 65535,
-                "default": 9042
+                "maximum": 65535
               },
               "Storage": {
                 "type": "string",
@@ -2712,7 +2599,9 @@
                 "description": "仮想コア",
                 "example": 3,
                 "enum": [
-                  3
+                  2,
+                  3,
+                  6
                 ]
               },
               "Zone": {
@@ -2756,8 +2645,8 @@
       },
       "GetServiceClass": {
         "type": "string",
-        "description": "サービスクラス",
-        "example": "cloud/nosql/beta"
+        "description": "サービスクラス\n\n| プラン名      | サービスクラスパス          | \n|--------------|----------------------------|\n| 40GBプラン       |  cloud/nosql/plan/1        |\n| 100GBプラン       |  cloud/nosql/plan/2        |\n| 100GBプラン/ノード |  cloud/nosql/plan/2/node  |\n| 250GBプラン       |  cloud/nosql/plan/3        |\n| 250GBプラン/ノード |  cloud/nosql/plan/3/node  |\n",
+        "example": "cloud/nosql/plan/1"
       },
       "GetPlan": {
         "type": "object",
@@ -2765,8 +2654,8 @@
         "properties": {
           "ID": {
             "type": "integer",
-            "description": "プランID",
-            "example": 51004
+            "description": "プランID  \n\n| プラン名      | プランID   | \n|--------------|------------|\n| 40GBプラン       |   51142    |\n| 100GBプラン       |   51143    |\n| 100GBプラン/ノード |   51145    |\n| 250GBプラン       |   51144    |\n| 250GBプラン/ノード |   51146    |\n",
+            "example": 51142
           }
         }
       },
@@ -2843,7 +2732,7 @@
                       "ServiceClass": {
                         "type": "string",
                         "description": "サービスクラス",
-                        "example": "cloud/nosql/beta"
+                        "example": "cloud/nosql/plan/1"
                       }
                     }
                   }
@@ -2867,6 +2756,7 @@
                     "properties": {
                       "KMSKeyID": {
                         "type": "string",
+                        "nullable": true,
                         "description": "KMSキーID",
                         "example": "113700349294"
                       }

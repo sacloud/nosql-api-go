@@ -2,48 +2,51 @@ NoSQL OpenAPI定義は以下のページで公開されています。
 
 https://manual.sakura.ad.jp/api/cloud/nosql/
 
-現在はv1.4.1を利用しています。
+現在はv2.0.1を利用しています。
 
 # diff
 
-この実装では幾つかの不具合に対応するため公開されているOpenAPI定義を修正しています.
+この実装では不具合やogenへの対応のために定義を変更しています。
 OpenAPI定義もしくはAPI側が修正され次第更新します。
 
 ```diff
-ddiff --git a/Users/masa-nakagawa/Downloads/openapi.json b/openapi/openapi.json
-index 303c14e..d57b989 100644
---- a/Users/masa-nakagawa/Downloads/openapi.json
+diff --git a/openapi-orig.json b/openapi/openapi.json
+index 80bf3e0..e7e7377 100644
+--- a/openapi-orig.json
 +++ b/openapi/openapi.json
-@@ -159,6 +159,9 @@
-           "401": {
-             "$ref": "#/components/responses/UnauthorizedResponse"
-           },
-+          "404": {
-+            "$ref": "#/components/responses/NotFoundResponse"
-+          },
-           "500": {
-             "$ref": "#/components/responses/ServerErrorResponse"
-           }
-@@ -228,7 +231,7 @@
-           }
-         ],
-         "responses": {
--          "202": {
-+          "200": {
-             "description": "NoSQL削除受け付け成功時のレスポンス",
-             "content": {
-               "application/json": {
-@@ -1277,7 +1280,8 @@
-           "StatusChangedAt": {
-             "type": "string",
-             "format": "date-time",
--            "example": "2021-01-01T00:00:00Z"
-+            "example": "2021-01-01T00:00:00Z",
-+            "nullable": true
-           },
-           "Host": {
-             "type": "object",
-@@ -1418,6 +1422,7 @@
+@@ -1163,14 +1163,7 @@
+                 "type": "string",
+                 "nullable": true,
+                 "description": "データベースバージョン  \n**新規作成時必須**\n",
+-                "anyOf": [
+-                  {
+-                    "pattern": "^\\d+\\.\\d+\\.\\d+$"
+-                  },
+-                  {
+-                    "pattern": "^$"
+-                  }
+-                ],
++                "pattern": "^\\d+\\.\\d+\\.\\d+$",
+                 "example": "4.1.9"
+               },
+               "DefaultUser": {
+@@ -1179,14 +1172,7 @@
+                 "description": "デフォルトユーザ名  \n**新規作成時必須**\n",
+                 "example": "defaultuser01",
+                 "maxLength": 20,
+-                "anyOf": [
+-                  {
+-                    "pattern": "^[a-z][a-z0-9_]{3,19}$"
+-                  },
+-                  {
+-                    "pattern": "^$"
+-                  }
+-                ]
++                "pattern": "^[a-z][a-z0-9_]{3,19}$"
+               },
+               "DiskSize": {
+                 "type": "integer",
+@@ -1440,9 +1426,11 @@
                    "EncryptionKey": {
                      "type": "object",
                      "description": "暗号化キー情報",
@@ -51,55 +54,118 @@ index 303c14e..d57b989 100644
                      "properties": {
                        "KMSKeyID": {
                          "type": "string",
-@@ -1449,6 +1454,7 @@
-                 "type": "array",
-                 "items": {
-                   "type": "object",
-+                  "nullable": true,
-                   "properties": {
-                     "IPAddress": {
-                       "type": "string",
-@@ -1574,6 +1580,7 @@
-                       "EncryptionKey": {
-                         "type": "object",
-                         "description": "暗号化キー情報",
 +                        "nullable": true,
-                         "properties": {
-                           "KMSKeyID": {
-                             "type": "string",
-@@ -1744,7 +1751,8 @@
-             "$ref": "#/components/schemas/Tags"
+                         "description": "KMSキーID",
+                         "example": "113700349294"
+                       }
+@@ -1708,98 +1696,6 @@
+           "Appliance": {
+             "$ref": "#/components/schemas/NosqlAppliance"
            },
-           "Availability": {
+-          "Class": {
+-            "type": "string",
+-            "description": "クラス",
+-            "example": "nosql"
+-          },
+-          "Name": {
+-            "type": "string",
+-            "description": "NoSQLの名前",
+-            "example": "CassandraName",
+-            "minLength": 1,
+-            "maxLength": 64
+-          },
+-          "Description": {
+-            "type": "string",
+-            "description": "NoSQLの説明",
+-            "example": "説明",
+-            "minLength": 0,
+-            "maxLength": 512
+-          },
+-          "Plan": {
+-            "$ref": "#/components/schemas/Plan"
+-          },
+-          "Settings": {
+-            "$ref": "#/components/schemas/NosqlSettings"
+-          },
+-          "Remark": {
+-            "$ref": "#/components/schemas/NosqlRemark"
+-          },
+-          "ID": {
+-            "type": "string",
+-            "example": "113600097295"
+-          },
+-          "Account": {
+-            "type": "object",
+-            "properties": {
+-              "ID": {
+-                "type": "string"
+-              }
+-            }
+-          },
+-          "Tags": {
+-            "$ref": "#/components/schemas/Tags"
+-          },
+-          "Availability": {
 -            "$ref": "#/components/schemas/Availability"
-+            "type": "integer",
-+            "example": 70
+-          },
+-          "ServerCount": {
+-            "type": "integer",
+-            "example": 1
+-          },
+-          "HiddenRemark": {
+-            "type": "object",
+-            "properties": {
+-              "PlanSpec": {
+-                "type": "object",
+-                "properties": {
+-                  "Note": {
+-                    "type": "object",
+-                    "properties": {
+-                      "ID": {
+-                        "type": "string"
+-                      }
+-                    }
+-                  },
+-                  "ServiceClass": {
+-                    "type": "string",
+-                    "example": "cloud/nosql/plan/1"
+-                  }
+-                }
+-              },
+-              "Encrypted": {
+-                "type": "object",
+-                "properties": {
+-                  "Algorithm": {
+-                    "type": "string"
+-                  },
+-                  "IV": {
+-                    "type": "string"
+-                  },
+-                  "md5": {
+-                    "type": "string"
+-                  },
+-                  "Associative": {
+-                    "type": "boolean"
+-                  },
+-                  "Data": {
+-                    "type": "string"
+-                  }
+-                }
+-              }
+-            }
+-          },
+           "Success": {
+             "$ref": "#/components/schemas/Success"
            },
-           "ServerCount": {
-             "type": "integer",
-@@ -2348,7 +2356,6 @@
-             "type": "string",
-             "format": "ipv4",
-             "description": "ユーザ側スイッチに接続するIPアドレス",
--            "pattern": "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$",
-             "example": "192.168.100.11"
-           },
-           "NodeType": {
-@@ -2856,6 +2863,7 @@
-                   "EncryptionKey": {
-                     "type": "object",
-                     "description": "暗号化キー情報",
-+                    "nullable": true,
-                     "properties": {
-                       "KMSKeyID": {
-                         "type": "string",
-@@ -2887,6 +2895,7 @@
-                 "type": "array",
-                 "items": {
-                   "type": "object",
-+                  "nullable": true,
-                   "properties": {
-                     "IPAddress": {
-                       "type": "string",
+@@ -1809,7 +1705,8 @@
+         },
+         "required": [
+           "Appliance",
+-          "ID"
++          "Success",
++          "is_ok"
+         ]
+       },
+       "NosqlUpdateRequest": {
 
 ```
