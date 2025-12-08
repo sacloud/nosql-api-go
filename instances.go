@@ -1,16 +1,5 @@
-// Copyright 2025- The sacloud/nosql-api-go authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2016-2025 The terraform-provider-sakura Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package nosql
 
@@ -27,7 +16,7 @@ type InstanceAPI interface {
 	GetParameters(ctx context.Context) ([]v1.NosqlGetParameter, error)
 	SetParameters(ctx context.Context, params []v1.NosqlPutParameter) error
 	GetNodeHealth(ctx context.Context) (v1.NodeHealthNosqlStatus, error)
-	AddNodes(ctx context.Context, request v1.NosqlCreateRequestAppliance) (*v1.NosqlCreateResponse, error)
+	AddNodes(ctx context.Context, plan Plan, request v1.NosqlCreateRequestAppliance) (*v1.NosqlAppliance, error)
 	Recover(ctx context.Context) (string, error)
 	Repair(ctx context.Context, repairType string) error
 	Start(ctx context.Context) error
@@ -42,11 +31,7 @@ type instanceOp struct {
 	zone   string
 }
 
-func NewInstanceOp(client *v1.Client, dbId string) InstanceAPI {
-	return &instanceOp{client: client, dbId: dbId}
-}
-
-func NewInstanceOpWithZone(client *v1.Client, dbId string, zone string) InstanceAPI {
+func NewInstanceOp(client *v1.Client, dbId string, zone string) InstanceAPI {
 	return &instanceOp{client: client, dbId: dbId, zone: zone}
 }
 
@@ -160,14 +145,14 @@ func (op *instanceOp) GetNodeHealth(ctx context.Context) (v1.NodeHealthNosqlStat
 	}
 }
 
-func (op *instanceOp) AddNodes(ctx context.Context, request v1.NosqlCreateRequestAppliance) (*v1.NosqlCreateResponse, error) {
+func (op *instanceOp) AddNodes(ctx context.Context, plan Plan, request v1.NosqlCreateRequestAppliance) (*v1.NosqlAppliance, error) {
 	if op.zone == "" {
 		return nil, NewError("Instance.AddNodes", errors.New("zone must be specified via NewInstanceOpWithZone"))
 	}
 
 	request.Class = "nosql"
-	request.Plan = v1.Plan{ID: v1.NewOptInt(51116)}
-	request.ServiceClass = "cloud/nosql/beta/node"
+	request.Plan = v1.Plan{ID: plan.GetPlanIDforNodes()}
+	request.ServiceClass = plan.GetServiceClassForNodes()
 	request.Remark.Nosql.PrimaryNodes = v1.NewOptNosqlRemarkNosqlPrimaryNodes(v1.NosqlRemarkNosqlPrimaryNodes{
 		Appliance: v1.NosqlRemarkNosqlPrimaryNodesAppliance{ID: op.dbId, Zone: v1.NosqlRemarkNosqlPrimaryNodesApplianceZone{Name: op.zone}},
 	})
@@ -178,7 +163,7 @@ func (op *instanceOp) AddNodes(ctx context.Context, request v1.NosqlCreateReques
 
 	switch p := res.(type) {
 	case *v1.NosqlCreateResponse:
-		return p, nil
+		return &p.Appliance, nil
 	case *v1.BadRequestResponse:
 		return nil, NewAPIError("Instance.AddNodes", 400, errors.New(p.ErrorMsg.Value))
 	case *v1.UnauthorizedResponse:
