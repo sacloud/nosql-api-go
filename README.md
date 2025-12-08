@@ -29,39 +29,40 @@ func main() {
 	ctx := context.Background()
 	databaseOp := nosql.NewDatabaseOp(client)
 	// 以下はテスト用のセットアップ。アドレスなどは実際の環境向けに編集する
-	resCreated, err := databaseOp.Create(ctx, v1.NosqlCreateRequestAppliance{
+	resCreated, err := databaseOp.Create(ctx, nosql.Plan100GB, v1.NosqlCreateRequestAppliance{
 		Name:        "sdk-test-db",
 		Description: v1.NewOptString("This is a test database"),
-		Plan:        v1.Plan{ID: v1.NewOptInt(51004)},
 		Tags:        v1.NewOptNilTags([]string{"nosql"}),
-		Settings: v1.NewOptNosqlCreateRequestApplianceSettings(v1.NosqlCreateRequestApplianceSettings{
-			Backup: v1.NewOptNilNosqlCreateRequestApplianceSettingsBackup(v1.NosqlCreateRequestApplianceSettingsBackup{
+		Settings: v1.NosqlSettings{
+			Backup: v1.NewOptNilNosqlSettingsBackup(v1.NosqlSettingsBackup{
 				Connect:   "nfs://192.168.0.31/export",
-				DayOfWeek: v1.NewOptNilNosqlCreateRequestApplianceSettingsBackupDayOfWeekItemArray([]v1.NosqlCreateRequestApplianceSettingsBackupDayOfWeekItem{"sun"}),
+				DayOfWeek: v1.NewOptNilNosqlSettingsBackupDayOfWeekItemArray([]v1.NosqlSettingsBackupDayOfWeekItem{"sun"}),
 				Time:      v1.NewOptNilString("00:00"),
-				Rotate:    v1.NewOptInt(4),
+				Rotate:    2,
 			}),
 			SourceNetwork:    []string{},
 			Password:         v1.NewOptPassword("sdktest-12345"),
 			ReserveIPAddress: v1.NewOptIPv4(netip.MustParseAddr("192.168.0.10")),
-		}),
-		Disk: v1.NewOptNilNosqlCreateRequestApplianceDisk(v1.NosqlCreateRequestApplianceDisk{
-			EncryptionAlgorithm: v1.NewOptString("aes256_xts"),
-			EncryptionKey: v1.NewOptNosqlCreateRequestApplianceDiskEncryptionKey(
-				v1.NosqlCreateRequestApplianceDiskEncryptionKey{KMSKeyID: v1.NewOptString("111111111112")}),
-		}),
+			Repair: v1.NewOptNilNosqlSettingsRepair(v1.NosqlSettingsRepair{
+				Incremental: v1.NewOptNosqlSettingsRepairIncremental(v1.NosqlSettingsRepairIncremental{
+					DaysOfWeek: []v1.NosqlSettingsRepairIncrementalDaysOfWeekItem{"sun"},
+					Time:       "01:00",
+				}),
+				Full: v1.NewOptNosqlSettingsRepairFull(v1.NosqlSettingsRepairFull{
+					DayOfWeek: v1.NosqlSettingsRepairFullDayOfWeek("sun"),
+					Time:      "02:00",
+					Interval:  v1.NosqlSettingsRepairFullInterval(7),
+				}),
+			}),
+		},
 		Remark: v1.NosqlRemark{
 			// NosqlRemarkNosqlの設定は現状固定値なので、DefaultUser以外は変更しない
 			Nosql: v1.NosqlRemarkNosql{
-				DatabaseEngine:  v1.NewOptNosqlRemarkNosqlDatabaseEngine("Cassandra"),
-				DatabaseVersion: v1.NewOptString("4.1.9"),
-				DefaultUser:     v1.NewOptString("sdktest"),
-				DiskSize:        v1.NewOptNosqlRemarkNosqlDiskSize(102400),
-				Memory:          v1.NewOptNosqlRemarkNosqlMemory(8192),
-				Nodes:           3,
-				Port:            v1.NewOptInt(9042),
-				Storage:         v1.NewOptNosqlRemarkNosqlStorage("SSD"),
-				Virtualcore:     v1.NewOptNosqlRemarkNosqlVirtualcore(3),
+				DatabaseEngine:  v1.NewOptNilNosqlRemarkNosqlDatabaseEngine("Cassandra"),
+				DatabaseVersion: v1.NewOptNilString("4.1.9"),
+				DefaultUser:     v1.NewOptNilString("sdktest"),
+				Port:            v1.NewOptNilInt(9042),
+				Storage:         v1.NewOptNilNosqlRemarkNosqlStorage("SSD"),
 				Zone:            "tk1b",
 			},
 			Servers: []v1.NosqlRemarkServersItem{
@@ -81,11 +82,10 @@ func main() {
 				UserIPAddress1: netip.MustParseAddr("192.168.0.4"),
 				UserIPAddress2: v1.NewOptIPv4(netip.MustParseAddr("192.168.0.5")),
 				UserIPAddress3: v1.NewOptIPv4(netip.MustParseAddr("192.168.0.6")),
-				UserSubnet: v1.NewOptNosqlCreateRequestApplianceUserInterfacesItemUserSubnet(
-					v1.NosqlCreateRequestApplianceUserInterfacesItemUserSubnet{
-						DefaultRoute:   "192.168.0.1",
-						NetworkMaskLen: 24,
-					}),
+				UserSubnet: v1.NosqlCreateRequestApplianceUserInterfacesItemUserSubnet{
+					DefaultRoute:   "192.168.0.1",
+					NetworkMaskLen: 24,
+				},
 			},
 		},
 	})
@@ -100,7 +100,7 @@ func main() {
 	}
 	fmt.Printf("Read Database: %+v\n", res)
 
-	instanceOp := nosql.NewInstanceOp(client, res.ID)
+	instanceOp := nosql.NewInstanceOp(client, res.ID, "tk1b")
 	version, err := instanceOp.GetVersion(ctx)
 	if err != nil {
 		panic(err)
@@ -121,17 +121,14 @@ func main()
 {
     // 省略
 	instanceOp := nosql.NewInstanceOpWithZone(client, primaryNodeId, "tk1b")
-	resAdded, err := instanceOp.AddNodes(ctx, v1.NosqlCreateRequestAppliance{
+	resAdded, err := instanceOp.AddNodes(ctx, nosql.Plan100GB, v1.NosqlCreateRequestAppliance{
 		Name: "sdk-test-db-add",
-		Settings: v1.NewOptNosqlCreateRequestApplianceSettings(v1.NosqlCreateRequestApplianceSettings{
+		Settings: v1.NosqlSettings{
 			ReserveIPAddress: v1.NewOptIPv4(netip.MustParseAddr("192.168.0.11")),
-		}),
+		},
 		Remark: v1.NosqlRemark{
-			// NosqlRemarkNosqlの設定は現状固定値なので、DefaultUser以外は変更しない
 			Nosql: v1.NosqlRemarkNosql{
-				DatabaseVersion: v1.NewOptString("4.1.9"),
-				Nodes:           2,
-				Zone:            "tk1b",
+				Zone: "tk1b",
 			},
 			Servers: []v1.NosqlRemarkServersItem{
 				{UserIPAddress: netip.MustParseAddr("192.168.0.7")},
@@ -144,15 +141,13 @@ func main()
 		},
 		UserInterfaces: []v1.NosqlCreateRequestApplianceUserInterfacesItem{
 			{
-				// 実際のSwitchのリソースIDを指定する
-				Switch:         v1.NosqlCreateRequestApplianceUserInterfacesItemSwitch{ID: "113701895705"},
+				Switch:         v1.NosqlCreateRequestApplianceUserInterfacesItemSwitch{ID: "111111111111"},
 				UserIPAddress1: netip.MustParseAddr("192.168.0.7"),
 				UserIPAddress2: v1.NewOptIPv4(netip.MustParseAddr("192.168.0.8")),
-				UserSubnet: v1.NewOptNosqlCreateRequestApplianceUserInterfacesItemUserSubnet(
-					v1.NosqlCreateRequestApplianceUserInterfacesItemUserSubnet{
-						DefaultRoute:   "192.168.0.1",
-						NetworkMaskLen: 24,
-					}),
+				UserSubnet: v1.NosqlCreateRequestApplianceUserInterfacesItemUserSubnet{
+					DefaultRoute:   "192.168.0.1",
+					NetworkMaskLen: 24,
+				},
 			},
 		},
 	})
