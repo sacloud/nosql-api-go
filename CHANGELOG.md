@@ -3,6 +3,9 @@
 ## [v0.2.0](https://github.com/sacloud/nosql-api-go/compare/v0.1.1...v0.2.0) - 2025-12-08
 - Use openapi spec v2 by @repeatedly in https://github.com/sacloud/nosql-api-go/pull/23
 
+## [v0.2.0](https://github.com/sacloud/nosql-api-go/compare/v0.1.1...v0.2.0) - 2025-12-08
+- Use openapi spec v2 by @repeatedly in https://github.com/sacloud/nosql-api-go/pull/23
+
 ## [v0.1.1](https://github.com/sacloud/nosql-api-go/compare/v0.1.0...v0.1.1) - 2025-11-14
 - Use openapi def 1.4.1 with unreleased changes by @repeatedly in https://github.com/sacloud/nosql-api-go/pull/14
 
