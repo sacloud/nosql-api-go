@@ -18,15 +18,17 @@ import (
 
 	nosql "github.com/sacloud/nosql-api-go"
 	v1 "github.com/sacloud/nosql-api-go/apis/v1"
+	"github.com/sacloud/saclient-go"
 )
 
 func main() {
-	client, err := nosql.NewClient()
+	theClient := saclient.Client{}
+	client, err := nosql.NewClient(&theClient)
 	if err != nil {
 		panic(err)
 	}
-
-	ctx := context.Background()
+    
+    ctx := context.Background()
 	databaseOp := nosql.NewDatabaseOp(client)
 	// 以下はテスト用のセットアップ。アドレスなどは実際の環境向けに編集する
 	resCreated, err := databaseOp.Create(ctx, nosql.Plan100GB, v1.NosqlCreateRequestAppliance{
