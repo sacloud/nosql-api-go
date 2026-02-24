@@ -5,16 +5,20 @@ package nosql
 
 import (
 	"fmt"
-	"net/http"
 	"runtime"
 
 	client "github.com/sacloud/api-client-go"
-	saht "github.com/sacloud/go-http"
 	v1 "github.com/sacloud/nosql-api-go/apis/v1"
+	"github.com/sacloud/saclient-go"
 )
 
-// DefaultAPIRootURL デフォルトのAPIルートURL
-const DefaultAPIRootURL = "https://secure.sakura.ad.jp/cloud/zone/tk1b/api/cloud/1.1"
+const (
+	// DefaultAPIRootURL デフォルトのAPIルートURL
+	DefaultAPIRootURL = "https://secure.sakura.ad.jp/cloud/zone/tk1b/api/cloud/1.1"
+
+	// ServiceKey SDKの種別を示すキー、プロファイルでのエンドポイント取得に利用する
+	ServiceKey = "nosql"
+)
 
 // UserAgent APIリクエスト時のユーザーエージェント
 var UserAgent = fmt.Sprintf(
@@ -25,27 +29,30 @@ var UserAgent = fmt.Sprintf(
 	client.DefaultUserAgent,
 )
 
-func NewClient(params ...client.ClientParam) (*v1.Client, error) {
-	return NewClientWithApiUrl(DefaultAPIRootURL, params...)
+func NewClient(client saclient.ClientAPI) (*v1.Client, error) {
+	endpointConfig, err := client.EndpointConfig()
+	if err != nil {
+		return nil, NewError("unable to load endpoint configuration", err)
+	}
+	endpoint := DefaultAPIRootURL
+	if ep, ok := endpointConfig.Endpoints[ServiceKey]; ok && ep != "" {
+		endpoint = ep
+	}
+	return NewClientWithAPIRootURL(client, endpoint)
 }
 
-func NewClientWithApiUrl(apiUrl string, params ...client.ClientParam) (*v1.Client, error) {
-	params = append(params, client.WithUserAgent(UserAgent), client.WithOptions(&client.Options{
-		RequestCustomizers: []saht.RequestCustomizer{
-			func(req *http.Request) error {
-				// 文字列を勝手に数値に変換しないようヘッダーで指定
-				req.Header.Set("X-Sakura-Bigint-As-Int", "0")
-				return nil
-			}}}))
-	c, err := client.NewClient(apiUrl, params...)
-	if err != nil {
-		return nil, NewError("NewClientWithApiUrl", err)
+func NewClientWithAPIRootURL(client saclient.ClientAPI, apiRootURL string) (*v1.Client, error) {
+	dupable, ok := client.(saclient.ClientOptionAPI)
+	if !ok {
+		return nil, NewError("client does not implement saclient.ClientOptionAPI", nil)
 	}
 
-	v1Client, err := v1.NewClient(c.ServerURL(), v1.WithClient(c.NewHttpRequestDoer()))
+	augmented, err := dupable.DupWith(
+		saclient.WithUserAgent(UserAgent),
+		saclient.WithBigInt(false), // 文字列を勝手に数値に変換しないようヘッダーで指定
+	)
 	if err != nil {
-		return nil, NewError("NewClientWithApiUrl", err)
+		return nil, err
 	}
-
-	return v1Client, nil
+	return v1.NewClient(apiRootURL, v1.WithClient(augmented))
 }
