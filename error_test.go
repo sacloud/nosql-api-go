@@ -7,7 +7,7 @@ import (
 	"errors"
 	"testing"
 
-	client "github.com/sacloud/api-client-go"
+	client "github.com/sacloud/saclient-go"
 )
 
 func TestError_Error(t *testing.T) {

@@ -61,7 +61,7 @@ func main() {
 			// NosqlRemarkNosqlの設定は現状固定値なので、DefaultUser以外は変更しない
 			Nosql: v1.NosqlRemarkNosql{
 				DatabaseEngine:  v1.NewOptNilNosqlRemarkNosqlDatabaseEngine("Cassandra"),
-				DatabaseVersion: v1.NewOptNilString("4.1.9"),
+				DatabaseVersion: v1.NewOptNilString("4.1.10"),
 				DefaultUser:     v1.NewOptNilString("sdktest"),
 				Port:            v1.NewOptNilInt(9042),
 				Storage:         v1.NewOptNilNosqlRemarkNosqlStorage("SSD"),
