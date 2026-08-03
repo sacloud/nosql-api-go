@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.3.1](https://github.com/sacloud/nosql-api-go/compare/v0.3.0...v0.3.1) - 2026-08-03
+- update README for repository transition by @shyouhei in https://github.com/sacloud/nosql-api-go/pull/61
+
 ## [v0.3.0](https://github.com/sacloud/nosql-api-go/compare/v0.2.0...v0.3.0) - 2026-03-02
 - go: bump github.com/sacloud/api-client-go from 0.3.3 to 0.3.4 by @dependabot[bot] in https://github.com/sacloud/nosql-api-go/pull/27
 - Switch API client to saclient-go by @yamamoto-febc in https://github.com/sacloud/nosql-api-go/pull/39
